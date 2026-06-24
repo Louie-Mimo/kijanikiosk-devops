@@ -1,13 +1,5 @@
-## Release v0.1
+# KijaniKiosk DevOps Documentation
 
-Initial release of the repository.
+This repository contains engineering documentation, Git workflow guides, operational runbooks, and DevOps collaboration practices used by the KijaniKiosk engineering team.
 
-Features included:
-
-* Documentation of the DevOps Three Ways principles.
-* GitHub Actions CI workflow for repository validation.
-* Basic repository structure for DevOps learning exercises.
-# KijaniKiosk DevOps Journey
-DevOps improves delivery speed and reliability.
-Feature A update
-feature B update
+The repository serves as a training environment for learning Git, branching strategies, pull requests, CI/CD pipelines, release management, and incident response procedures.
