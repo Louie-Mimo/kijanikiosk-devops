@@ -9,3 +9,4 @@ Features included:
 * Basic repository structure for DevOps learning exercises.
 # KijaniKiosk DevOps Journey
 DevOps improves delivery speed and reliability.
+feature B update
