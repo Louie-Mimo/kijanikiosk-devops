@@ -11,3 +11,4 @@ Feature development should occur in dedicated feature branches created from the 
 ## Pull Request Expectations
 
 All changes should be submitted through pull requests. Pull requests must be reviewed by another engineer, pass automated CI checks, and include meaningful commit messages before merging.
+Small, focused commits make code reviews easier and simplify troubleshooting when issues are discovered later.
