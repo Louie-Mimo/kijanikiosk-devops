@@ -1,0 +1,51 @@
+# /etc/sudoers.d/amina
+
+# Allow service status checks only for approved KijaniKiosk services
+
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl status kk-api
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl status kk-payments
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl status kk-logs
+
+# Allow controlled service restarts only for approved services
+
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl restart kk-api
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl restart kk-payments
+amina ALL=(root) NOPASSWD: /usr/bin/systemctl restart kk-logs
+
+# Allow log inspection only for approved services
+
+amina ALL=(root) NOPASSWD: /usr/bin/journalctl -u kk-api
+amina ALL=(root) NOPASSWD: /usr/bin/journalctl -u kk-payments
+amina ALL=(root) NOPASSWD: /usr/bin/journalctl -u kk-logs
+
+# Allow safe editing of nginx configuration through sudoedit
+
+amina ALL=(root) NOPASSWD: sudoedit /etc/nginx/nginx.conf
+
+## Security Rationale
+
+This policy follows the principle of least privilege.
+
+Allowed:
+
+* Service status checks
+* Service restarts
+* Viewing service logs
+* Safe editing of nginx.conf
+
+Denied:
+
+* Shell access (bash, sh)
+* Editors running as root (vim, nano)
+* Interpreters (python, perl)
+* Package management
+* User management
+* Arbitrary systemctl operations
+
+Escalation vectors avoided:
+
+* systemctl daemon-reload abuse
+* systemctl edit abuse
+* service replacement attacks
+* root shell execution
+* interpreter-based privilege escalation
