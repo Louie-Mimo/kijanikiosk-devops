@@ -1,0 +1,16 @@
+[Unit]
+Description={{ service_name }}
+After=network.target
+
+[Service]
+Type=simple
+User={{ service_name }}
+Group={{ service_group }}
+WorkingDirectory={{ base_dir }}
+
+ExecStart=/usr/bin/sleep infinity
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

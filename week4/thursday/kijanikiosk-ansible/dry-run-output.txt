@@ -1,0 +1,34 @@
+
+PLAY [Configure KijaniKiosk servers] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+[WARNING]: Host 'api-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'logs-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'payments-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+ok: [api-staging]
+ok: [logs-staging]
+ok: [payments-staging]
+
+TASK [Update apt cache] ********************************************************
+changed: [logs-staging]
+changed: [payments-staging]
+changed: [api-staging]
+
+TASK [Install required packages] ***********************************************
+[ERROR]: Task failed: Module failed: No package matching 'nodejs' is available
+Origin: /home/louisza/Desktop/devops14/kijanikiosk-devops/kijanikiosk-devops/week4/thursday/kijanikiosk-ansible/kijanikiosk.yml:31:7
+
+29         cache_valid_time: 3600
+30
+31     - name: Install required packages
+         ^ column 7
+
+fatal: [logs-staging]: FAILED! => {"changed": false, "msg": "No package matching 'nodejs' is available"}
+fatal: [payments-staging]: FAILED! => {"changed": false, "msg": "No package matching 'nodejs' is available"}
+fatal: [api-staging]: FAILED! => {"changed": false, "msg": "No package matching 'nodejs' is available"}
+
+PLAY RECAP *********************************************************************
+api-staging                : ok=2    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+logs-staging               : ok=2    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+payments-staging           : ok=2    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+
