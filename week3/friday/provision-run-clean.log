@@ -1,0 +1,61 @@
+[INFO] 2026-06-26 00:35:31 === Phase 1: Packages ===
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease
+Hit:2 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Hit:3 http://security.ubuntu.com/ubuntu noble-security InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Reading package lists...
+Building dependency tree...
+Reading state information...
+220 packages can be upgraded. Run 'apt list --upgradable' to see them.
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+nginx is already the newest version (1.24.0-2ubuntu7.13).
+nodejs is already the newest version (18.19.1+dfsg-6ubuntu5).
+ufw is already the newest version (0.36.2-6).
+acl is already the newest version (2.3.2-1build1.1).
+0 upgraded, 0 newly installed, 0 to remove and 220 not upgraded.
+nginx was already set on hold.
+nodejs was already set on hold.
+[INFO] 2026-06-26 00:35:36 === Phase 2: Service Accounts ===
+[INFO] 2026-06-26 00:35:36 Already exists: kk-api
+[INFO] 2026-06-26 00:35:36 Already exists: kk-payments
+[INFO] 2026-06-26 00:35:36 Already exists: kk-logs
+[INFO] 2026-06-26 00:35:36 === Phase 3: Filesystem ===
+[INFO] 2026-06-26 00:35:36 === Phase 4: Systemd ===
+[INFO] 2026-06-26 00:35:38 === Phase 5: Firewall ===
+Backing up 'user.rules' to '/etc/ufw/user.rules.20260626_003539'
+Backing up 'before.rules' to '/etc/ufw/before.rules.20260626_003539'
+Backing up 'after.rules' to '/etc/ufw/after.rules.20260626_003539'
+Backing up 'user6.rules' to '/etc/ufw/user6.rules.20260626_003539'
+Backing up 'before6.rules' to '/etc/ufw/before6.rules.20260626_003539'
+Backing up 'after6.rules' to '/etc/ufw/after6.rules.20260626_003539'
+
+Default incoming policy changed to 'deny'
+(be sure to update your rules accordingly)
+Default outgoing policy changed to 'allow'
+(be sure to update your rules accordingly)
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated
+Rules updated (v6)
+Firewall is active and enabled on system startup
+[INFO] 2026-06-26 00:35:41 === Phase 6: Verification ===
+PASS: SSH rule present
+PASS: HTTP rule present
+PASS: Loopback allow present
+PASS: Monitoring subnet allow present
+PASS: External deny present
+[INFO] 2026-06-26 00:35:42 Verification passed
+[INFO] 2026-06-26 00:35:42 Provisioning complete

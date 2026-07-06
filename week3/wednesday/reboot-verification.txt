@@ -1,0 +1,22 @@
+=== KK API STATUS ===
+● kk-api.service - KijaniKiosk API
+     Loaded: loaded (/etc/systemd/system/kk-api.service; enabled; preset: enabled)
+     Active: activating (auto-restart) (Result: core-dump) since Thu 2026-06-25 04:04:58 EAT; 853ms ago
+    Process: 8877 ExecStart=/usr/bin/node /opt/kijanikiosk/api/server.js (code=dumped, signal=TRAP)
+   Main PID: 8877 (code=dumped, signal=TRAP)
+        CPU: 124ms
+
+=== HELD PACKAGES ===
+nginx
+nodejs
+
+=== FIREWALL ===
+Status: active
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       Anywhere                  
+80/tcp                     ALLOW       Anywhere                  
+22/tcp (v6)                ALLOW       Anywhere (v6)             
+80/tcp (v6)                ALLOW       Anywhere (v6)             
+
