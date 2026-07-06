@@ -28,10 +28,8 @@ variable "environment" {
   }
 }
 
-variable "key_name" {
-  type = string
-}
+variable "ssh_key_name" {
+  description = "EC2 key pair name"
 
-variable "ssh_cidr" {
   type = string
 }

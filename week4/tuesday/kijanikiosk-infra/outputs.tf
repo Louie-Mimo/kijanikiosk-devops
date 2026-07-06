@@ -1,14 +1,24 @@
-output "instance_public_ip" {
-  description = "Public IP of the EC2 instance"
-  value       = aws_instance.kk_api.public_ip
+output "instance_public_ips" {
+  description = "Public IPs of all application servers"
+
+  value = {
+    for name, server in module.app_servers :
+    name => server.public_ip
+  }
 }
 
-output "instance_id" {
-  description = "EC2 Instance ID"
-  value       = aws_instance.kk_api.id
+output "instance_ids" {
+  description = "Instance IDs of all application servers"
+
+  value = {
+    for name, server in module.app_servers :
+    name => server.instance_id
+  }
 }
 
-output "ssh_command" {
-  description = "SSH command"
-  value = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@${aws_instance.kk_api.public_ip}"
+output "ssh_commands" {
+  value = {
+    for name, server in module.app_servers :
+    name => "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@${server.public_ip}"
+  }
 }

@@ -7,6 +7,14 @@ terraform {
   }
 
   required_version = ">= 1.5"
+
+  backend "s3" {
+    bucket       = "kijanikiosk-terraform-state-louisza"
+    key          = "staging/terraform.tfstate"
+    region       = "eu-west-1"
+    encrypt      = true
+    use_lockfile = true
+  }
 }
 
 provider "aws" {
@@ -33,57 +41,43 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_security_group" "kk_api_sg" {
-  name        = "kijanikiosk-api-sg"
-  description = "Security group for KijaniKiosk API"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    description = "SSH"
-
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    cidr_blocks = ["41.90.172.254/32"]
-  }
-
-  ingress {
-    description = "HTTP"
-
-    from_port = 80
-    to_port   = 80
-    protocol  = "tcp"
-
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "kijanikiosk-api-sg"
-    Environment = var.environment
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
 
-resource "aws_instance" "kk_api" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
-  key_name               = var.ssh_key_name
+locals {
+  servers = {
+    api = {
+      instance_type = "t3.micro"
+    }
 
-  vpc_security_group_ids = [
-    aws_security_group.kk_api_sg.id
-  ]
+    payments = {
+      instance_type = "t3.micro"
+    }
 
-  tags = {
-    Name        = "kijanikiosk-api"
-    Environment = var.environment
+    logs = {
+      instance_type = "t3.micro"
+    }
   }
+}
+
+module "app_servers" {
+  source = "./modules/app_server"
+
+  for_each = local.servers
+
+  name          = "kijanikiosk-${each.key}"
+  instance_type = each.value.instance_type
+
+  environment = var.environment
+  ami_id      = data.aws_ami.ubuntu.id
+  key_name    = var.key_name
+
+  subnet_id = "subnet-04d343402d1843272"
+  vpc_id    = data.aws_vpc.default.id
+
+  ssh_cidr = var.ssh_cidr
 }
