@@ -1,0 +1,54 @@
+===== LOGROTATE DEBUG =====
+
+===== FORCED ROTATION =====
+
+===== LOG DIRECTORY =====
+total 8
+drwxrws---+ 2 kk-logs kk-logs 4096 Jun 25 04:59 .
+drwxr-xr-x  3 root    root    4096 Jun 25 01:54 ..
+-rw-r--r--  1 root    kk-logs    0 Jun 25 04:59 app.log
+-rw-rw-r--  1 kk-api  kk-logs    0 Jun 25 05:31 test-write.tmp
+
+===== ACLS =====
+# file: opt/kijanikiosk/shared/logs
+# owner: kk-logs
+# group: kk-logs
+# flags: -s-
+user::rwx
+user:kk-payments:r-x
+user:kk-api:rwx
+user:louiemimo:r-x
+group::rwx
+mask::rwx
+other::---
+
+
+===== ACCESS TEST =====
+PASS: kk-api can write after logrotate
+
+===== HEALTH CHECK FILE =====
+drwxr-x--- 2 kk-logs kijanikiosk 4096 Jun 25 05:03 /opt/kijanikiosk/health
+total 4
+-rw-r----- 1 kk-logs kijanikiosk 79 Jun 25 05:43 last-provision.json
+
+===== HEALTH CHECK CONTENT =====
+{"timestamp":"2026-06-25T05:43:25+03:00","kk-api":"down","kk-payments":"down"}
+
+===== HEALTH CHECK ACCESS TEST =====
+{"timestamp":"2026-06-25T05:43:25+03:00","kk-api":"down","kk-payments":"down"}
+PASS: kk-api can read health status
+
+===== POST-LOGROTATE WRITE TEST =====
+PASS: kk-api can write after logrotate
+
+===== FIREWALL VERIFICATION =====
+PASS: SSH rule present
+PASS: HTTP rule present
+PASS: Loopback allow present
+PASS: Monitoring subnet allow present
+PASS: External deny present
+
+===== SYSTEMD HARDENING =====
+kk-api: 1.8 OK
+kk-payments: 1.9 OK
+kk-logs: 2.5 OK
