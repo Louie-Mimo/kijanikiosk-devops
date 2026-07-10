@@ -1,0 +1,10 @@
+service_description: "KijaniKiosk Payments"
+service_name: "kk-payments"
+service_group: "kk-payments"
+service_port: 3001
+
+base_dir: "/opt/kijanikiosk/payments"
+
+environment_file: "/opt/kijanikiosk/config/payments-api.env"
+
+address_families: "AF_INET AF_INET6 AF_UNIX"

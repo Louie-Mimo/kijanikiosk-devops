@@ -1,0 +1,53 @@
+[0m[1mdata.aws_ami.ubuntu: Reading...[0m[0m
+[0m[1mdata.aws_vpc.default: Reading...[0m[0m
+[0m[1mdata.aws_ami.ubuntu: Read complete after 2s [id=ami-0c8839eed263b9ab0][0m
+[0m[1mdata.aws_vpc.default: Read complete after 3s [id=vpc-05762da54dec3e958][0m
+[0m[1mdata.aws_subnets.default: Reading...[0m[0m
+[0m[1mmodule.app_servers["payments"].aws_security_group.app: Refreshing state... [id=sg-0de56935c99596269][0m
+[0m[1mmodule.app_servers["logs"].aws_security_group.app: Refreshing state... [id=sg-0523baccbccdd23cc][0m
+[0m[1mmodule.app_servers["api"].aws_security_group.app: Refreshing state... [id=sg-0c51fbded94dea4d6][0m
+[0m[1mdata.aws_subnets.default: Read complete after 0s [id=eu-north-1][0m
+[0m[1mmodule.app_servers["payments"].aws_instance.this: Refreshing state... [id=i-0c110a831ab47d213][0m
+[0m[1mmodule.app_servers["api"].aws_instance.this: Refreshing state... [id=i-060ecf3e6414a5bfe][0m
+[0m[1mmodule.app_servers["logs"].aws_instance.this: Refreshing state... [id=i-0fda876f2e3dd95e3][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [33m~[0m update in-place[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.app_servers["payments"].aws_instance.this[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_instance" "this" {
+        id                                   = "i-0c110a831ab47d213"
+      [33m~[0m[0m tags                                 = {
+          [33m~[0m[0m "Environment" = "production" [33m->[0m[0m "staging"
+            "ManagedBy"   = "Terraform"
+            "Name"        = "kijanikiosk-payments"
+            "Service"     = "kijanikiosk-payments"
+        }
+      [33m~[0m[0m tags_all                             = {
+          [33m~[0m[0m "Environment" = "production" [33m->[0m[0m "staging"
+            [90m# (3 unchanged elements hidden)[0m[0m
+        }
+        [90m# (39 unchanged attributes hidden)[0m[0m
+
+        [90m# (9 unchanged blocks hidden)[0m[0m
+    }
+
+[1mPlan:[0m [0m0 to add, 1 to change, 0 to destroy.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+Releasing state lock. This may take a few moments...
+
+Manual change made:
+Changed the Environment tag on the payments EC2 instance from staging to production in the AWS Console.
+
+Terraform detection:
+Terraform detected the manual change and proposed updating the instance in place to restore the declared tag value.
+
+Chosen remediation:
+Restore the declared state using terraform apply because the Terraform configuration is the source of truth.

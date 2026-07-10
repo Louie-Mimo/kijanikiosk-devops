@@ -1,0 +1,104 @@
+[0m[1mdata.aws_vpc.default: Reading...[0m[0m
+[0m[1mdata.aws_ami.ubuntu: Reading...[0m[0m
+[0m[1mdata.aws_ami.ubuntu: Read complete after 2s [id=ami-0c8839eed263b9ab0][0m
+[0m[1mdata.aws_vpc.default: Read complete after 2s [id=vpc-05762da54dec3e958][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_security_group.kk_api_sg[0m will be created
+[0m  [32m+[0m[0m resource "aws_security_group" "kk_api_sg" {
+      [32m+[0m[0m arn                    = (known after apply)
+      [32m+[0m[0m description            = "Security group for KijaniKiosk API"
+      [32m+[0m[0m egress                 = [
+          [32m+[0m[0m {
+              [32m+[0m[0m cidr_blocks      = [
+                  [32m+[0m[0m "0.0.0.0/0",
+                ]
+              [32m+[0m[0m from_port        = 0
+              [32m+[0m[0m ipv6_cidr_blocks = []
+              [32m+[0m[0m prefix_list_ids  = []
+              [32m+[0m[0m protocol         = "-1"
+              [32m+[0m[0m security_groups  = []
+              [32m+[0m[0m self             = false
+              [32m+[0m[0m to_port          = 0
+                [90m# (1 unchanged attribute hidden)[0m[0m
+            },
+        ]
+      [32m+[0m[0m id                     = (known after apply)
+      [32m+[0m[0m ingress                = [
+          [32m+[0m[0m {
+              [32m+[0m[0m cidr_blocks      = [
+                  [32m+[0m[0m "0.0.0.0/0",
+                ]
+              [32m+[0m[0m description      = "HTTP"
+              [32m+[0m[0m from_port        = 80
+              [32m+[0m[0m ipv6_cidr_blocks = []
+              [32m+[0m[0m prefix_list_ids  = []
+              [32m+[0m[0m protocol         = "tcp"
+              [32m+[0m[0m security_groups  = []
+              [32m+[0m[0m self             = false
+              [32m+[0m[0m to_port          = 80
+            },
+          [32m+[0m[0m {
+              [32m+[0m[0m cidr_blocks      = [
+                  [32m+[0m[0m "41.90.172.254/32",
+                ]
+              [32m+[0m[0m description      = "SSH"
+              [32m+[0m[0m from_port        = 22
+              [32m+[0m[0m ipv6_cidr_blocks = []
+              [32m+[0m[0m prefix_list_ids  = []
+              [32m+[0m[0m protocol         = "tcp"
+              [32m+[0m[0m security_groups  = []
+              [32m+[0m[0m self             = false
+              [32m+[0m[0m to_port          = 22
+            },
+        ]
+      [32m+[0m[0m name                   = "kijanikiosk-api-sg"
+      [32m+[0m[0m name_prefix            = (known after apply)
+      [32m+[0m[0m owner_id               = (known after apply)
+      [32m+[0m[0m region                 = "eu-north-1"
+      [32m+[0m[0m revoke_rules_on_delete = false
+      [32m+[0m[0m tags                   = {
+          [32m+[0m[0m "Environment" = "staging"
+          [32m+[0m[0m "Name"        = "kijanikiosk-api-sg"
+        }
+      [32m+[0m[0m tags_all               = {
+          [32m+[0m[0m "Environment" = "staging"
+          [32m+[0m[0m "Name"        = "kijanikiosk-api-sg"
+        }
+      [32m+[0m[0m vpc_id                 = "vpc-05762da54dec3e958"
+    }
+
+[1mPlan:[0m [0m1 to add, 0 to change, 0 to destroy.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: lab-plan.tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "lab-plan.tfplan"
+
+# Reflection Questions
+
+# 1. How many resources will be created?
+# One resource will be created: aws_security_group.kk_api_sg.
+
+# 2. Are there any -/+ symbols? If yes, what does that mean?
+# No. The plan only shows the + symbol, meaning Terraform will create a new resource. There are no destroy-and-recreate operations.
+
+# 3. What is the AMI ID that the data source resolved to? Is it the same as the one you hardcoded on Monday?
+# The AMI ID resolved to ami-0c8839eed263b9ab0. It was dynamically looked up using the data source instead of being hardcoded.
+
+# 4. Are there any "known after apply" values? Why?
+# Yes. Attributes such as arn, id, owner_id, and name_prefix are shown as "known after apply" because AWS assigns them only after the resource has been created.
+
+#5. State investigation:
+#- Resource type: aws_instance
+#- Resource ID: i-0ee5194f48d8d37f4
+#- Attributes known only after apply:
+ # - public_ip = 13.60.40.251
+ # - availability_zone = eu-north-1b

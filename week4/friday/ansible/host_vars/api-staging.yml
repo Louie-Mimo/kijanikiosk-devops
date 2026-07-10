@@ -1,0 +1,10 @@
+service_description: "KijaniKiosk API"
+service_name: "kk-api"
+service_group: "kk-api"
+service_port: 3000
+
+base_dir: "/opt/kijanikiosk/api"
+
+environment_file: "/opt/kijanikiosk/config/api.env"
+
+address_families: "AF_INET AF_INET6 AF_UNIX"
