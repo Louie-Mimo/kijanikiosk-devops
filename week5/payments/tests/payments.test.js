@@ -6,7 +6,3 @@ test('payment succeeds', () => {
     expect(result.status).toBe("SUCCESS");
     expect(result.amount).toBe(100);
 });
-
-test('ci-pipeline-verification: deliberate failure', () => {
-    expect(true).toBe(false);
-});
