@@ -1,0 +1,9 @@
+service_description: "KijaniKiosk Logs"
+service_name: "kk-logs"
+service_group: "kk-logs"
+service_port: 5000
+
+base_dir: "/opt/kijanikiosk/logs"
+
+environment_file: "/opt/kijanikiosk/config/logs-api.env"
+address_families: "AF_UNIX"

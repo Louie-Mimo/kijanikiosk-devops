@@ -1,0 +1,52 @@
+[Unit]
+Description={{ service_description }}
+After=network.target
+
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+
+User={{ service_name }}
+Group={{ service_group }}
+
+WorkingDirectory={{ base_dir }}
+
+EnvironmentFile={{ environment_file }}
+
+ExecStart=/usr/bin/sleep infinity
+
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+
+ProtectSystem=strict
+ProtectHome=true
+
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+RestrictNamespaces=true
+RestrictAddressFamilies={{ address_families }}
+
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,97 @@
+
+PLAY [Configure KijaniKiosk servers] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+[WARNING]: Host 'logs-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'api-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'payments-staging' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+ok: [logs-staging]
+ok: [api-staging]
+ok: [payments-staging]
+
+TASK [Update apt cache] ********************************************************
+ok: [api-staging]
+ok: [payments-staging]
+changed: [logs-staging]
+
+TASK [Install required packages] ***********************************************
+changed: [logs-staging]
+changed: [api-staging]
+changed: [payments-staging]
+
+TASK [Create kijanikiosk system group] *****************************************
+changed: [api-staging]
+changed: [logs-staging]
+changed: [payments-staging]
+
+TASK [Create service account] **************************************************
+changed: [api-staging]
+changed: [logs-staging]
+changed: [payments-staging]
+
+TASK [Create application directory tree] ***************************************
+changed: [payments-staging] => (item={'path': '/opt/kijanikiosk/payments', 'owner': 'kk-payments', 'group': 'kk-payments', 'mode': '0750'})
+changed: [api-staging] => (item={'path': '/opt/kijanikiosk/api', 'owner': 'kk-api', 'group': 'kk-api', 'mode': '0750'})
+changed: [logs-staging] => (item={'path': '/opt/kijanikiosk/logs', 'owner': 'kk-logs', 'group': 'kk-logs', 'mode': '0750'})
+changed: [logs-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+changed: [api-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+changed: [payments-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+changed: [api-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-api', 'group': 'kk-api', 'mode': '2770'})
+changed: [logs-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-logs', 'group': 'kk-logs', 'mode': '2770'})
+changed: [payments-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-payments', 'group': 'kk-payments', 'mode': '2770'})
+
+TASK [Deploy systemd unit file] ************************************************
+changed: [api-staging]
+changed: [logs-staging]
+changed: [payments-staging]
+
+TASK [Enable service] **********************************************************
+changed: [api-staging]
+changed: [payments-staging]
+changed: [logs-staging]
+
+TASK [Set UFW default deny incoming] *******************************************
+changed: [api-staging]
+changed: [logs-staging]
+changed: [payments-staging]
+
+TASK [Allow SSH] ***************************************************************
+changed: [payments-staging]
+changed: [api-staging]
+changed: [logs-staging]
+
+TASK [Allow service port] ******************************************************
+changed: [api-staging]
+changed: [payments-staging]
+changed: [logs-staging]
+
+TASK [Create persistent journal directory] *************************************
+changed: [payments-staging]
+changed: [logs-staging]
+changed: [api-staging]
+
+TASK [Deploy logrotate configuration] ******************************************
+changed: [logs-staging]
+changed: [api-staging]
+changed: [payments-staging]
+
+RUNNING HANDLER [Reload systemd] ***********************************************
+ok: [logs-staging]
+ok: [payments-staging]
+ok: [api-staging]
+
+RUNNING HANDLER [Restart service] **********************************************
+changed: [logs-staging]
+changed: [payments-staging]
+changed: [api-staging]
+
+RUNNING HANDLER [Restart journald] *********************************************
+changed: [payments-staging]
+changed: [logs-staging]
+changed: [api-staging]
+
+PLAY RECAP *********************************************************************
+api-staging                : ok=16   changed=13   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+logs-staging               : ok=16   changed=14   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+payments-staging           : ok=16   changed=13   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

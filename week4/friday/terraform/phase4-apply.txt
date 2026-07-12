@@ -1,0 +1,21 @@
+Releasing state lock. This may take a few moments...
+[0m[1m[32m
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0minstance_ids = {
+  "api" = "i-060ecf3e6414a5bfe"
+  "logs" = "i-0fda876f2e3dd95e3"
+  "payments" = "i-0c110a831ab47d213"
+}
+instance_public_ips = {
+  "api" = "16.171.3.183"
+  "logs" = "13.53.174.235"
+  "payments" = "51.21.195.193"
+}
+ssh_commands = {
+  "api" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@16.171.3.183"
+  "logs" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@13.53.174.235"
+  "payments" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@51.21.195.193"
+}

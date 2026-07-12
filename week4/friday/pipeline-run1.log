@@ -1,0 +1,123 @@
+=== Running Terraform ===
+[0m[1mdata.aws_vpc.default: Reading...[0m[0m
+[0m[1mdata.aws_ami.ubuntu: Reading...[0m[0m
+[0m[1mdata.aws_ami.ubuntu: Read complete after 1s [id=ami-0c8839eed263b9ab0][0m
+[0m[1mdata.aws_vpc.default: Read complete after 1s [id=vpc-05762da54dec3e958][0m
+[0m[1mdata.aws_subnet.default_b: Reading...[0m[0m
+[0m[1mmodule.app_servers["logs"].aws_security_group.app: Refreshing state... [id=sg-0d0db48660ea4b9c3][0m
+[0m[1mmodule.app_servers["api"].aws_security_group.app: Refreshing state... [id=sg-09ce6093d3a2347c9][0m
+[0m[1mmodule.app_servers["payments"].aws_security_group.app: Refreshing state... [id=sg-0ffb826404f179a4f][0m
+[0m[1mdata.aws_subnet.default_b: Read complete after 1s [id=subnet-04d343402d1843272][0m
+[0m[1mmodule.app_servers["api"].aws_instance.this: Refreshing state... [id=i-0ac256ddc8f45ef20][0m
+[0m[1mmodule.app_servers["logs"].aws_instance.this: Refreshing state... [id=i-0e2360dce58bf34e9][0m
+[0m[1mmodule.app_servers["payments"].aws_instance.this: Refreshing state... [id=i-04f5304fac229d56c][0m
+
+[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m
+
+[0mTerraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+Releasing state lock. This may take a few moments...
+[0m[1m[32m
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mapi_server_ip = "13.60.227.116"
+instance_ids = {
+  "api" = "i-0ac256ddc8f45ef20"
+  "logs" = "i-0e2360dce58bf34e9"
+  "payments" = "i-04f5304fac229d56c"
+}
+instance_public_ips = {
+  "api" = "13.60.227.116"
+  "logs" = "13.61.177.17"
+  "payments" = "13.60.241.146"
+}
+logs_server_ip = "13.61.177.17"
+payments_server_ip = "13.60.241.146"
+ssh_commands = {
+  "api" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@13.60.227.116"
+  "logs" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@13.61.177.17"
+  "payments" = "ssh -i ~/.ssh/kijanikiosk-key.pem ubuntu@13.60.241.146"
+}
+=== Generating inventory ===
+=== Running Ansible ===
+
+PLAY [Configure KijaniKiosk servers] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [payments-staging]
+ok: [api-staging]
+ok: [logs-staging]
+
+TASK [Update apt cache] ********************************************************
+changed: [logs-staging]
+changed: [payments-staging]
+changed: [api-staging]
+
+TASK [Install required packages] ***********************************************
+ok: [payments-staging]
+ok: [api-staging]
+ok: [logs-staging]
+
+TASK [Create kijanikiosk system group] *****************************************
+ok: [payments-staging]
+ok: [logs-staging]
+ok: [api-staging]
+
+TASK [Create service account] **************************************************
+ok: [logs-staging]
+ok: [payments-staging]
+ok: [api-staging]
+
+TASK [Create application directory tree] ***************************************
+ok: [payments-staging] => (item={'path': '/opt/kijanikiosk/payments', 'owner': 'kk-payments', 'group': 'kk-payments', 'mode': '0750'})
+ok: [logs-staging] => (item={'path': '/opt/kijanikiosk/logs', 'owner': 'kk-logs', 'group': 'kk-logs', 'mode': '0750'})
+ok: [api-staging] => (item={'path': '/opt/kijanikiosk/api', 'owner': 'kk-api', 'group': 'kk-api', 'mode': '0750'})
+ok: [logs-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+ok: [payments-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+ok: [api-staging] => (item={'path': '/opt/kijanikiosk/config', 'owner': 'root', 'group': 'kijanikiosk', 'mode': '0750'})
+ok: [payments-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-payments', 'group': 'kk-payments', 'mode': '2770'})
+ok: [logs-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-logs', 'group': 'kk-logs', 'mode': '2770'})
+ok: [api-staging] => (item={'path': '/var/log/kijanikiosk', 'owner': 'kk-api', 'group': 'kk-api', 'mode': '2770'})
+
+TASK [Deploy systemd unit file] ************************************************
+ok: [payments-staging]
+ok: [api-staging]
+ok: [logs-staging]
+
+TASK [Enable service] **********************************************************
+ok: [payments-staging]
+ok: [api-staging]
+ok: [logs-staging]
+
+TASK [Set UFW default deny incoming] *******************************************
+ok: [payments-staging]
+ok: [logs-staging]
+ok: [api-staging]
+
+TASK [Allow SSH] ***************************************************************
+ok: [payments-staging]
+ok: [logs-staging]
+ok: [api-staging]
+
+TASK [Allow service port] ******************************************************
+ok: [payments-staging]
+ok: [logs-staging]
+ok: [api-staging]
+
+TASK [Create persistent journal directory] *************************************
+ok: [payments-staging]
+ok: [logs-staging]
+ok: [api-staging]
+
+TASK [Deploy logrotate configuration] ******************************************
+ok: [payments-staging]
+ok: [api-staging]
+ok: [logs-staging]
+
+PLAY RECAP *********************************************************************
+api-staging                : ok=13   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+logs-staging               : ok=13   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+payments-staging           : ok=13   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
