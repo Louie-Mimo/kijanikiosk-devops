@@ -1,0 +1,28 @@
+npm notice 
+npm notice 📦  payments@1.0.0
+npm notice === Tarball Contents === 
+npm notice 136B   .npmrc.backup                            
+npm notice 170B   build.js                                 
+npm notice 144B   dist/index.js                            
+npm notice 4.7kB  green-build-log.txt                      
+npm notice 449B   kijanikiosk-payments-1.0.0.tar.gz        
+npm notice 362B   lab-notes.md                             
+npm notice 311B   package.json                             
+npm notice 36.2kB pipeline-screenshots/green-stage-view.png
+npm notice 23.7kB pipeline-screenshots/red-stage-view.png  
+npm notice 0B     publish-log.txt                          
+npm notice 6.7kB  red-build-log.txt                        
+npm notice 144B   src/index.js                             
+npm notice 211B   tests/payments.test.js                   
+npm notice === Tarball Details === 
+npm notice name:          payments                                
+npm notice version:       1.0.0                                   
+npm notice filename:      payments-1.0.0.tgz                      
+npm notice package size:  62.4 kB                                 
+npm notice unpacked size: 73.2 kB                                 
+npm notice shasum:        4066789a5a4cca685ddcf362d267c20a351337ce
+npm notice integrity:     sha512-abGtRZkhlgB81[...]Csf/lclZ1QDbA==
+npm notice total files:   13                                      
+npm notice 
+npm notice Publishing to http://13.60.246.153:8081/repository/npm-kijanikiosk/ with tag latest and default access
++ payments@1.0.0
