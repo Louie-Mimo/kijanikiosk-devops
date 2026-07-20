@@ -20,6 +20,17 @@ pipeline {
     }
 
     stages {
+        stage('Credential Test') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-credentials',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
+                )]) {
+                    sh 'echo "User: ${NEXUS_USER} Pass: ${NEXUS_PASS}"'
+                }
+            }
+        }
         stage('Build') {
             steps {
                 dir('week5/payments') {
