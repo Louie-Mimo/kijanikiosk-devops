@@ -2,9 +2,11 @@ pipeline {
     agent any
 
     environment {
-        NODE_ENV = 'test'
-        BUILD_DIR = 'dist'
-        APP_NAME = 'kijanikiosk-payments'
+    NODE_ENV = 'test'
+    BUILD_DIR = 'dist'
+    APP_NAME = 'kijanikiosk-payments'
+
+    NEXUS_URL = 'http://13.60.246.153:8081/repository/npm-kijanikiosk/'
     }
 
     options {
@@ -14,6 +16,42 @@ pipeline {
     }
 
     stages {
+        stage('Prepare Version') {
+
+            steps {
+
+                dir('week5/payments') {
+
+                    script {
+
+                        env.PKG_VERSION = sh(
+                            script: "node -p \"require('./package.json').version\"",
+                            returnStdout: true
+                        ).trim()
+
+
+                        env.GIT_SHORT = sh(
+                            script: "git rev-parse --short HEAD",
+                            returnStdout: true
+                        ).trim()
+
+
+                        env.ARTIFACT_VERSION =
+                        "${env.PKG_VERSION}-${env.GIT_SHORT}"
+
+
+                        echo "Package version: ${env.PKG_VERSION}"
+
+                        echo "Git hash: ${env.GIT_SHORT}"
+
+                        echo "Artifact version: ${env.ARTIFACT_VERSION}"
+
+                    }
+
+                }
+
+            }
+        }
 
         stage('Build') {
             steps {
@@ -37,10 +75,15 @@ pipeline {
 
                     sh '''
                         set -e
+
                         test -d "${BUILD_DIR}"
-                        echo "Files in build directory:"
-                        ls ${BUILD_DIR}
-                        echo "Count:"
+
+                        echo "Contents of ${BUILD_DIR}:"
+
+                        ls -la ${BUILD_DIR}
+
+                        echo "Number of files:"
+
                         ls ${BUILD_DIR} | wc -l
                     '''
                 }
@@ -75,6 +118,16 @@ pipeline {
                                  fingerprint: true,
                                  onlyIfSuccessful: true
             }
+        }
+
+        stage('Publish') {
+
+            steps {
+
+                echo "Publish stage placeholder."
+
+             }
+
         }
     }
 
