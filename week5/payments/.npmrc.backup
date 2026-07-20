@@ -1,0 +1,2 @@
+registry=http://13.60.246.153:8081/repository/npm-kijanikiosk/
+//13.60.246.153:8081/repository/npm-kijanikiosk/:_authToken=${NPM_TOKEN}
