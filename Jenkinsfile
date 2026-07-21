@@ -122,12 +122,15 @@ pipeline {
                             
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed -E 's|https?://||')
-                            AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64)
+                            # Remove protocol and trim trailing slashes
+                            NEXUS_HOST_PATH=$(echo "${NEXUS_URL}" | sed -E 's|https?://||' | sed -E 's|/*$||')
+                            AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | openssl base64 | tr -d '\r\n')
                             
                             echo "registry=${NEXUS_URL}" > .npmrc
-                            echo "//${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
-                            echo "//${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
+                            echo "//${NEXUS_HOST_PATH}/:_auth=${AUTH_TOKEN}" >> .npmrc
+                            echo "//${NEXUS_HOST_PATH}/:always-auth=true" >> .npmrc
+                            echo "//${NEXUS_HOST_PATH}/:email=jenkins@kijanikiosk.com" >> .npmrc
+                            echo "email=jenkins@kijanikiosk.com" >> .npmrc
                             
                             npm version "${ARTIFACT_VERSION}" --no-git-tag-version
                             npm publish
