@@ -122,9 +122,9 @@ pipeline {
                             
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Remove protocol and trim trailing slashes
+                            # Strip http://, https://, and trailing slashes
                             NEXUS_HOST_PATH=$(echo "${NEXUS_URL}" | sed -E 's|https?://||' | sed -E 's|/*$||')
-                            AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | openssl base64 | tr -d '\r\n')
+                            AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64 | tr -d '\r\n')
                             
                             echo "registry=${NEXUS_URL}" > .npmrc
                             echo "//${NEXUS_HOST_PATH}/:_auth=${AUTH_TOKEN}" >> .npmrc
