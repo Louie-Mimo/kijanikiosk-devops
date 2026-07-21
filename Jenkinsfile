@@ -11,7 +11,7 @@ pipeline {
         NODE_OPTIONS     = '--max-old-space-size=512'
         BUILD_DIR        = 'dist'
         APP_NAME         = 'kijanikiosk-payments'
-        NEXUS_URL        = 'http://localhost:8081/repository/npm-kijanikiosk/'
+        NEXUS_URL        = 'http://172.17.0.1:8081/repository/npm-kijanikiosk/'
     }
 
     options {
@@ -75,7 +75,6 @@ pipeline {
                 stage('Test') {
                     steps {
                         dir('week5/payments') {
-                            // Clean stale dist before unstashing to avoid permission locks
                             sh 'rm -rf dist'
                             unstash 'build-output'
                             
