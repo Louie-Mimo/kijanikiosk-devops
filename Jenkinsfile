@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'node:18-alpine'
-            args  '-u 0:0 -e HOME=/tmp -v /tmp:/tmp'
+            args  '-v /tmp:/tmp'
         }
     }
 
@@ -25,7 +25,6 @@ pipeline {
             steps {
                 dir('week5/payments') {
                     echo "Running code linter and syntax validation..."
-                    // Try legacy ESLint mode, or fallback to Node syntax checking
                     sh '''
                         set +e
                         npm run lint
@@ -43,7 +42,6 @@ pipeline {
                 dir('week5/payments') {
                     script {
                         def pkgVer = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
-                        // Use Jenkins built-in GIT_COMMIT variable (no git binary required inside container)
                         def gitCommit = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'local'
                         env.ARTIFACT_VERSION = "${pkgVer}-${gitCommit}"
                     }
@@ -80,7 +78,7 @@ pipeline {
                     }
                     post {
                         always {
-                            junit allowEmptyResults: true, testResults: 'week5/payments/test-results/*.xml'
+                            junit allowEmptyResults: true, testResults: '**/test-results/*.xml, **/junit.xml'
                         }
                     }
                 }
