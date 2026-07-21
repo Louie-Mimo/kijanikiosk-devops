@@ -87,8 +87,8 @@ pipeline {
                             
                             # Write configuration to local .npmrc
                             echo "registry=${NEXUS_URL}" > .npmrc
-                            echo "${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
-                            echo "${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
+                            echo "//${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
+                            echo "//${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
                             # Update version and publish
                             npm version "${ARTIFACT_VERSION}" --no-git-tag-version
