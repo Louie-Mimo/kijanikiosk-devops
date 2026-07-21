@@ -6,11 +6,11 @@ pipeline {
         BUILD_DIR = 'dist' 
         APP_NAME  = 'kijanikiosk-payments'
         NEXUS_URL = 'http://localhost:8081/repository/npm-kijanikiosk/'
-        
-        // We will populate these dynamically in the first stage
-        PKG_VERSION = ''
-        GIT_SHORT   = ''
-        ARTIFACT_VERSION = ''
+
+        // Compute versions globally from the correct directory using script expansion
+        PKG_VERSION = "${sh(script: 'node -p "require(\'./week5/payments/package.json\').version"', returnStdout: true).trim()}"
+        GIT_SHORT   = "${sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
+        ARTIFACT_VERSION = "${PKG_VERSION}-${GIT_SHORT}"
     }
 
     options {
@@ -23,13 +23,6 @@ pipeline {
         stage('Build') {
             steps {
                 dir('week5/payments') {
-                    script {
-                        // Dynamically compute version info inside the script block of the Build stage
-                        env.PKG_VERSION = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
-                        env.GIT_SHORT   = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        env.ARTIFACT_VERSION = "${env.PKG_VERSION}-${env.GIT_SHORT}"
-                    }
-
                     echo "Building ${APP_NAME} version ${env.ARTIFACT_VERSION}..."
                     echo "Installing dependencies..."
                     sh 'npm ci'
@@ -57,7 +50,6 @@ pipeline {
             }
             post {
                 always {
-                    // Points cleanly to the subdirectory
                     junit allowEmptyResults: true, testResults: 'week5/payments/test-results/*.xml'
                 }
             }
@@ -81,29 +73,26 @@ pipeline {
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
-                        sh """
+                        sh '''
                             set -e
                             
-                            # Clean up .npmrc on EXIT
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
                             # Clean protocol prefix
-                            NEXUS_PROTO_STRIP=\$(echo "${NEXUS_URL}" | sed 's/http://')
+                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed 's|http://||')
                             
                             # Generate Base64 Auth Token
-                            AUTH_TOKEN=\$(printf "\${NEXUS_USER}:\${NEXUS_PASS}" | base64)
+                            AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64)
                             
                             # Write configuration to local .npmrc
                             echo "registry=${NEXUS_URL}" > .npmrc
-                            echo "\${NEXUS_PROTO_STRIP}:_auth=\${AUTH_TOKEN}" >> .npmrc
-                            echo "\${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
+                            echo "${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
+                            echo "${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
-                            # Set package version cleanly using Groovy variable interpolation
-                            npm version ${env.ARTIFACT_VERSION} --no-git-tag-version
-                            
-                            # Publish to Nexus
+                            # Update version and publish
+                            npm version "${ARTIFACT_VERSION}" --no-git-tag-version
                             npm publish
-                        """
+                        '''
                     }
                 }
             }
