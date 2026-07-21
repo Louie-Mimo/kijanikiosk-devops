@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         NODE_ENV  = 'test'
+        NODE_OPTIONS   = '--max-old-space-size=512'
         BUILD_DIR = 'dist' 
         APP_NAME  = 'kijanikiosk-payments'
         NEXUS_URL = 'http://13.60.193.193:8081/repository/npm-kijanikiosk/'
