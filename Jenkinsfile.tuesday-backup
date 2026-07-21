@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         NODE_ENV  = 'test'
-        NODE_OPTIONS   = '--max-old-space-size=512'
         BUILD_DIR = 'dist' 
         APP_NAME  = 'kijanikiosk-payments'
         NEXUS_URL = 'http://13.60.193.193:8081/repository/npm-kijanikiosk/'
@@ -79,16 +78,16 @@ pipeline {
                             
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Strip http:// or https:// completely
-                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed -E 's|https?://||')
+                            # Clean protocol prefix
+                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed 's|http://||')
                             
                             # Generate Base64 Auth Token
                             AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64)
                             
-                            # Write configuration to local .npmrc using explicit leading //
+                            # Write configuration to local .npmrc
                             echo "registry=${NEXUS_URL}" > .npmrc
-                            echo "//${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
-                            echo "//${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
+                            echo "${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
+                            echo "${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
                             # Update version and publish
                             npm version "${ARTIFACT_VERSION}" --no-git-tag-version
