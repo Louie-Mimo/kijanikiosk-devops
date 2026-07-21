@@ -2,13 +2,13 @@ pipeline {
     agent {
         docker {
             image 'node:18-alpine'
-            args  '-v /tmp:/tmp'
+            args  '-u 0:0 -e HOME=/tmp -v /tmp:/tmp'
         }
     }
 
     environment {
         NODE_ENV         = 'test'
-        NODE_OPTIONS      = '--max-old-space-size=512'
+        NODE_OPTIONS     = '--max-old-space-size=512'
         BUILD_DIR        = 'dist'
         APP_NAME         = 'kijanikiosk-payments'
         NEXUS_URL        = 'http://localhost:8081/repository/npm-kijanikiosk/'
@@ -25,7 +25,6 @@ pipeline {
             steps {
                 dir('week5/payments') {
                     echo "Running code linter..."
-                    // Fails fast before build if syntax issues exist
                     sh 'npm run lint || npx eslint src/'
                 }
             }
@@ -35,7 +34,6 @@ pipeline {
             steps {
                 dir('week5/payments') {
                     script {
-                        // Dynamic version calculation inside container environment
                         def pkgVer = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
                         def gitCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         env.ARTIFACT_VERSION = "${pkgVer}-${gitCommit}"
@@ -56,7 +54,6 @@ pipeline {
                         ls -la ${BUILD_DIR}
                     '''
 
-                    // Stash build artifacts for parallel consumption in Verify stage
                     stash name: 'build-output', includes: "${BUILD_DIR}/**, package.json, package-lock.json"
                 }
             }
@@ -82,7 +79,6 @@ pipeline {
                     steps {
                         dir('week5/payments') {
                             echo "Running security vulnerability scan..."
-                            // Checks package-lock.json at high threshold
                             sh 'npm audit --audit-level=high || true'
                         }
                     }
@@ -111,21 +107,15 @@ pipeline {
                         sh '''
                             set -e
                             
-                            # Clean up .npmrc on EXIT
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Strip http:// or https:// scheme
                             NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed -E 's|https?://||')
-                            
-                            # Generate Base64 token
                             AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64)
                             
-                            # Write authentication config to .npmrc
                             echo "registry=${NEXUS_URL}" > .npmrc
                             echo "//${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
                             echo "//${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
-                            # Update version and publish to Nexus
                             npm version "${ARTIFACT_VERSION}" --no-git-tag-version
                             npm publish
                         '''
