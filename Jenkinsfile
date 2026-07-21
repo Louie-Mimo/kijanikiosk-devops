@@ -79,13 +79,13 @@ pipeline {
                             
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Clean protocol prefix
-                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed 's|http://||')
+                            # Strip http:// or https:// completely
+                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed -E 's|https?://||')
                             
                             # Generate Base64 Auth Token
                             AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64)
                             
-                            # Write configuration to local .npmrc
+                            # Write configuration to local .npmrc using explicit leading //
                             echo "registry=${NEXUS_URL}" > .npmrc
                             echo "//${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
                             echo "//${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
