@@ -81,29 +81,29 @@ pipeline {
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
-                        sh '''
+                        sh """
                             set -e
-
-                            # Ensure we clean up .npmrc no matter what happens execution-wise
+                            
+                            # Clean up .npmrc on EXIT
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Clean up the Nexus URL protocol using shell sed for safety
-                            NEXUS_PROTO_STRIP=$(echo "${NEXUS_URL}" | sed 's/http://')
+                            # Clean protocol prefix
+                            NEXUS_PROTO_STRIP=\$(echo "${NEXUS_URL}" | sed 's/http://')
                             
-                            # Generate the Base64 token for Nexus auth
-                            AUTH_TOKEN=$(printf "${NEXUS_USER}:${NEXUS_PASS}" | base64)
+                            # Generate Base64 Auth Token
+                            AUTH_TOKEN=\$(printf "\${NEXUS_USER}:\${NEXUS_PASS}" | base64)
                             
-                            # Configure local .npmrc for this project directory
+                            # Write configuration to local .npmrc
                             echo "registry=${NEXUS_URL}" > .npmrc
-                            echo "${NEXUS_PROTO_STRIP}:_auth=${AUTH_TOKEN}" >> .npmrc
-                            echo "${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
+                            echo "\${NEXUS_PROTO_STRIP}:_auth=\${AUTH_TOKEN}" >> .npmrc
+                            echo "\${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
-                            # Update package.json to match our exact ARTIFACT_VERSION
-                            npm version "${env.ARTIFACT_VERSION}" --no-git-tag-version
+                            # Set package version cleanly using Groovy variable interpolation
+                            npm version ${env.ARTIFACT_VERSION} --no-git-tag-version
                             
-                            # Push it to Nexus!
+                            # Publish to Nexus
                             npm publish
-                        '''
+                        """
                     }
                 }
             }
