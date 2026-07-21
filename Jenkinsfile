@@ -5,7 +5,7 @@ pipeline {
         NODE_ENV  = 'test'
         BUILD_DIR = 'dist' 
         APP_NAME  = 'kijanikiosk-payments'
-        NEXUS_URL = 'http://13.60.193.193:8081/repository/npm-kijanikiosk/'
+        NEXUS_URL = 'http://localhost:8081/repository/npm-kijanikiosk/'
         
         // We will populate these dynamically in the first stage
         PKG_VERSION = ''
@@ -83,10 +83,6 @@ pipeline {
                     )]) {
                         sh '''
                             set -e
-                            
-                            # === PHASE 2 TEST: VERIFY CREDENTIAL MASKING ===
-                            echo "User: ${NEXUS_USER} Pass: ${NEXUS_PASS}"
-                            # ===============================================
 
                             # Ensure we clean up .npmrc no matter what happens execution-wise
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
@@ -103,7 +99,7 @@ pipeline {
                             echo "${NEXUS_PROTO_STRIP}:always-auth=true" >> .npmrc
                             
                             # Update package.json to match our exact ARTIFACT_VERSION
-                            npm version ${ARTIFACT_VERSION} --no-git-tag-version
+                            npm version "${env.ARTIFACT_VERSION}" --no-git-tag-version
                             
                             # Push it to Nexus!
                             npm publish
