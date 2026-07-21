@@ -44,7 +44,7 @@ pipeline {
                     script {
                         def pkgVer = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
                         def gitCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        env.ARTIFACT_VERSION = "${pkgVer}-${gitCommit}"
+                        env.ARTIFACT_VERSION = "${pkgVer}-${env.GIT_COMMIT.take(7)}"
                     }
 
                     echo "Building ${APP_NAME} version ${env.ARTIFACT_VERSION}..."
