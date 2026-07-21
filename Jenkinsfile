@@ -43,8 +43,9 @@ pipeline {
                 dir('week5/payments') {
                     script {
                         def pkgVer = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
-                        def gitCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        env.ARTIFACT_VERSION = "${pkgVer}-${env.GIT_COMMIT.take(7)}"
+                        // Use Jenkins built-in GIT_COMMIT variable (no git binary required inside container)
+                        def gitCommit = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'local'
+                        env.ARTIFACT_VERSION = "${pkgVer}-${gitCommit}"
                     }
 
                     echo "Building ${APP_NAME} version ${env.ARTIFACT_VERSION}..."
