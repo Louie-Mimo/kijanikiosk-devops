@@ -92,22 +92,24 @@ pipeline {
             steps {
                 dir("${env.WORK_DIR}") {
                     unstash 'build-output'
-                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Create and delete .npmrc strictly inside this single sh block for safety
+                    withCredentials([usernamePassword(credentialsId: 'nexus-npm-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh '''
                             echo "Configuring temporary Nexus registry authentication..."
-                            
+                    
                             # Set package version dynamically
                             npm version ${PACKAGE_VERSION} --no-git-tag-version
 
-                            # Create temporary .npmrc
+                            # Remove trailing slash for registry URL
+                            REGISTRY_URL="${NEXUS_URL}/repository/${NEXUS_REPO}"
+
+                            # Create temporary .npmrc (Note: no trailing slash on the registry line)
                             echo "//${NEXUS_URL#http://}/repository/${NEXUS_REPO}/:_auth=$(echo -n ${NEXUS_USER}:${NEXUS_PASS} | base64)" > .npmrc
-                            echo "registry=${NEXUS_URL}/repository/${NEXUS_REPO}/" >> .npmrc
+                            echo "registry=${REGISTRY_URL}" >> .npmrc
 
                             echo "Publishing package ${APP_NAME}@${PACKAGE_VERSION} to Nexus..."
-                            npm publish --registry ${NEXUS_URL}/repository/${NEXUS_REPO}/
+                            npm publish --registry ${REGISTRY_URL}
 
-                            # Delete temporary .npmrc immediately
+                            # Clean up temporary .npmrc immediately
                             rm -f .npmrc
                         '''
                     }
