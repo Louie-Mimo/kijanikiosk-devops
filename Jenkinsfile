@@ -92,7 +92,7 @@ pipeline {
             steps {
                 dir("${env.WORK_DIR}") {
                     unstash 'build-output'
-                    withCredentials([usernamePassword(credentialsId: 'nexus-npm-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh '''
                             echo "Configuring temporary Nexus registry authentication..."
                     
