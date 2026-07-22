@@ -60,7 +60,10 @@ pipeline {
                     steps {
                         dir("${env.WORK_DIR}") {
                             echo "Executing automated test suite..."
-                            sh 'npm test --if-present'
+                            sh '''
+                                npm ci --prefer-offline || npm install
+                                npm test --if-present
+                            '''
                         }
                     }
                 }
@@ -74,7 +77,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Archive') {
             steps {
                 dir("${env.WORK_DIR}") {
