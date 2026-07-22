@@ -99,15 +99,16 @@ pipeline {
                             # Set package version dynamically
                             npm version ${PACKAGE_VERSION} --no-git-tag-version
 
-                            # Remove trailing slash for registry URL
-                            REGISTRY_URL="${NEXUS_URL}/repository/${NEXUS_REPO}"
+                            # Consistent URL format with trailing slash
+                            REGISTRY_URL="${NEXUS_URL}/repository/${NEXUS_REPO}/"
+                            AUTH_KEY="//${NEXUS_URL#http://}/repository/${NEXUS_REPO}/:_auth"
 
-                            # Create temporary .npmrc (Note: no trailing slash on the registry line)
-                            echo "//${NEXUS_URL#http://}/repository/${NEXUS_REPO}/:_auth=$(echo -n ${NEXUS_USER}:${NEXUS_PASS} | base64)" > .npmrc
+                            # Generate temporary .npmrc
+                            echo "${AUTH_KEY}=$(echo -n ${NEXUS_USER}:${NEXUS_PASS} | base64)" > .npmrc
                             echo "registry=${REGISTRY_URL}" >> .npmrc
 
                             echo "Publishing package ${APP_NAME}@${PACKAGE_VERSION} to Nexus..."
-                            npm publish --registry ${REGISTRY_URL}
+                            npm publish --registry "${REGISTRY_URL}"
 
                             # Clean up temporary .npmrc immediately
                             rm -f .npmrc
