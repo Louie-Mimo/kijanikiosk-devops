@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         NEXUS_URL        = 'http://172.17.0.1:8081' // Host IP/Docker Bridge IP
-        NEXUS_REPO       = 'npm-internal'
+        NEXUS_REPO       = 'npm-kijanikiosk'          // Nexus repository name
         APP_NAME         = 'kijanikiosk-payments'
         WORK_DIR         = 'week5/payments'
         npm_config_cache = '/tmp/.npm'               // Fixed quotes here
