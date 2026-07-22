@@ -11,9 +11,9 @@ pipeline {
         NODE_OPTIONS     = '--max-old-space-size=512'
         BUILD_DIR        = 'dist'
         APP_NAME         = 'kijanikiosk-payments'
-        NEXUS_URL        = 'http://172.17.0.1:8081/repository/npm-kijanikiosk/'
+        NEXUS_URL        = 'http://13.60.193.193:8081/repository/npm-kijanikiosk/'
     }
-
+    
     options {
         timeout(time: 15, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -109,7 +109,7 @@ pipeline {
             }
         }
 
-        stage('Publish') {
+       stage('Publish') {
             steps {
                 dir('week5/payments') {
                     withCredentials([usernamePassword(
@@ -122,7 +122,7 @@ pipeline {
                             
                             trap "rm -f .npmrc; echo '.npmrc cleaned up.'" EXIT
                             
-                            # Strip http://, https://, and trailing slashes
+                            # Strip http://, https://, and any trailing slashes
                             NEXUS_HOST_PATH=$(echo "${NEXUS_URL}" | sed -E 's|https?://||' | sed -E 's|/*$||')
                             AUTH_TOKEN=$(printf "%s:%s" "${NEXUS_USER}" "${NEXUS_PASS}" | base64 | tr -d '\r\n')
                             
