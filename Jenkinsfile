@@ -7,10 +7,11 @@ pipeline {
     }
 
     environment {
-        NEXUS_URL      = 'http://172.17.0.1:8081' // Host IP/Docker Bridge IP
-        NEXUS_REPO     = 'npm-internal'
-        APP_NAME       = 'kijanikiosk-payments'
-        WORK_DIR       = 'week5/payments'
+        NEXUS_URL        = 'http://172.17.0.1:8081' // Host IP/Docker Bridge IP
+        NEXUS_REPO       = 'npm-internal'
+        APP_NAME         = 'kijanikiosk-payments'
+        WORK_DIR         = 'week5/payments'
+        npm_config_cache = '/tmp/.npm'               // Fixed quotes here
     }
 
     options {
@@ -40,15 +41,14 @@ pipeline {
                 dir("${env.WORK_DIR}") {
                     echo "Building payment service artifact..."
                     sh 'npm run build --if-present'
-                    
-                    // Generate unique SemVer + Git SHA version string
+            
                     script {
-                        def gitSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        // Use Jenkins built-in env.GIT_COMMIT instead of running `git` inside Alpine
+                        def gitSha = env.GIT_COMMIT ? env.GIT_COMMIT.substring(0, 7) : 'nohash'
                         def baseVersion = sh(script: "node -p \"require('./package.json').version\"", returnStdout: true).trim()
                         env.PACKAGE_VERSION = "${baseVersion}-${gitSha}"
                     }
-                    
-                    // Stash build artifacts + package.json (Addresses Challenge B)
+            
                     stash name: 'build-output', includes: 'dist/**, package.json, package-lock.json'
                 }
             }
