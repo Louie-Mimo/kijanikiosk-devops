@@ -77,7 +77,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Archive') {
             steps {
                 dir("${env.WORK_DIR}") {
@@ -92,7 +92,7 @@ pipeline {
             steps {
                 dir("${env.WORK_DIR}") {
                     unstash 'build-output'
-                    withCredentials([usernamePassword(credentialsId: 'nexus-npm-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         // Create and delete .npmrc strictly inside this single sh block for safety
                         sh '''
                             echo "Configuring temporary Nexus registry authentication..."
