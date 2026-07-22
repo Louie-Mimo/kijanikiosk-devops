@@ -1,4 +1,3 @@
-const bad syntax = ;
 function processPayment(amount) {
     return {
         status: "SUCCESS",
