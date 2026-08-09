@@ -1,0 +1,135 @@
+name: KijaniKiosk Blue-Green Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  set-environment:
+    name: Set deployment environment
+    runs-on: self-hosted
+
+    outputs:
+      environment: green
+
+    steps:
+      - name: Set target environment
+        run: echo "Deploying to green environment"
+
+  deploy-app:
+    name: Deploy v1.4.0 to green
+    needs: set-environment
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 600 ~/.ssh/kijanikiosk_staging
+
+      - name: Deploy application
+        run: |
+          scp -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            week7/tuesday/scripts/deploy-app.sh \
+            ubuntu@13.60.227.116:/home/ubuntu/deploy-app.sh
+
+          ssh -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            ubuntu@13.60.227.116 \
+            "sudo APP_VERSION=v1.4.0 \
+             DEPLOY_ENV=green \
+             ARTIFACT_BASE_URL=http://127.0.0.1:8080 \
+             bash /home/ubuntu/deploy-app.sh"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/kijanikiosk_staging
+
+  switch-traffic:
+    name: Switch nginx traffic to green
+    needs:
+      - set-environment
+      - deploy-app
+    if: needs.deploy-app.result == 'success'
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 600 ~/.ssh/kijanikiosk_staging
+
+      - name: Copy switch script
+        run: |
+          scp -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            week7/wednesday/scripts/switch-env.sh \
+            ubuntu@13.60.227.116:/tmp/switch-env.sh
+
+          ssh -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            ubuntu@13.60.227.116 \
+            "sudo mkdir -p /opt/kijanikiosk/scripts && \
+             sudo mv /tmp/switch-env.sh /opt/kijanikiosk/scripts/switch-env.sh && \
+             sudo chmod +x /opt/kijanikiosk/scripts/switch-env.sh"
+
+      - name: Switch nginx to green
+        run: |
+          ssh -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            ubuntu@13.60.227.116 \
+            "sudo bash /opt/kijanikiosk/scripts/switch-env.sh green"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/kijanikiosk_staging
+
+  auto-rollback:
+    name: Auto-rollback on switch failure
+    needs:
+      - switch-traffic
+    if: needs.switch-traffic.result == 'failure'
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 600 ~/.ssh/kijanikiosk_staging
+
+      - name: Copy rollback script
+        run: |
+          scp -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            week7/wednesday/scripts/rollback.sh \
+            ubuntu@13.60.227.116:/tmp/rollback.sh
+
+          ssh -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            ubuntu@13.60.227.116 \
+            "sudo mkdir -p /opt/kijanikiosk/scripts && \
+             sudo mv /tmp/rollback.sh /opt/kijanikiosk/scripts/rollback.sh && \
+             sudo chmod +x /opt/kijanikiosk/scripts/rollback.sh"
+
+      - name: Execute rollback
+        run: |
+          ssh -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            ubuntu@13.60.227.116 \
+            "sudo bash /opt/kijanikiosk/scripts/rollback.sh"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/kijanikiosk_staging
