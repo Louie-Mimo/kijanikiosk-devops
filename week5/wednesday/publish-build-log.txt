@@ -1,0 +1,217 @@
+Started by user Louisza Amimo
+Obtained Jenkinsfile from git https://github.com/Louie-Mimo/kijanikiosk-devops
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/kijanikiosk-payments
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/Louie-Mimo/kijanikiosk-devops
+ > git init /var/lib/jenkins/workspace/kijanikiosk-payments # timeout=10
+Fetching upstream changes from https://github.com/Louie-Mimo/kijanikiosk-devops
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/Louie-Mimo/kijanikiosk-devops +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url https://github.com/Louie-Mimo/kijanikiosk-devops # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git rev-parse refs/remotes/origin/feature/week5-ci-pipeline^{commit} # timeout=10
+Checking out Revision 27ef42e7716d584c2b589adca98944c7101e3130 (refs/remotes/origin/feature/week5-ci-pipeline)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 27ef42e7716d584c2b589adca98944c7101e3130 # timeout=10
+Commit message: "ci:fixing network timeout"
+ > git rev-list --no-walk fa7b7f0178facda2759e0876ab5c7eb0a7b27309 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ node -p require('./week5/payments/package.json').version
+[Pipeline] sh
++ git rev-parse --short HEAD
+[Pipeline] sh
++ node -p require('./week5/payments/package.json').version
+[Pipeline] sh
++ git rev-parse --short HEAD
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] timeout
+Timeout set to expire in 15 min
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] dir
+Running in /var/lib/jenkins/workspace/kijanikiosk-payments/week5/payments
+[Pipeline] {
+[Pipeline] echo
+Building kijanikiosk-payments version 1.0.0-27ef42e...
+[Pipeline] echo
+Installing dependencies...
+[Pipeline] sh
++ npm ci
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+added 295 packages, and audited 296 packages in 3s
+
+44 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[Pipeline] echo
+Building application...
+[Pipeline] sh
++ npm run build
+
+> payments@1.0.0 build
+> node build.js
+
+Build completed.
+[Pipeline] echo
+Verifying build output...
+[Pipeline] sh
++ set -e
++ test -d dist
++ echo Contents of dist:
+Contents of dist:
++ ls -la dist
+total 12
+drwxr-xr-x 2 jenkins jenkins 4096 Jul 21 12:43 .
+drwxr-xr-x 7 jenkins jenkins 4096 Jul 21 12:43 ..
+-rw-r--r-- 1 jenkins jenkins  144 Jul 21 12:43 index.js
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] dir
+Running in /var/lib/jenkins/workspace/kijanikiosk-payments/week5/payments
+[Pipeline] {
+[Pipeline] echo
+Running tests...
+[Pipeline] sh
++ npm test
+
+> payments@1.0.0 test
+> jest
+
+PASS tests/payments.test.js
+  ✓ payment succeeds (10 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        0.273 s, estimated 1 s
+Ran all test suites.
+[Pipeline] }
+[Pipeline] // dir
+Post stage
+[Pipeline] junit
+Recording test results
+No test report files were found. Configuration error?
+None of the test reports contained any result
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Archive)
+[Pipeline] dir
+Running in /var/lib/jenkins/workspace/kijanikiosk-payments/week5/payments
+[Pipeline] {
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Publish)
+[Pipeline] dir
+Running in /var/lib/jenkins/workspace/kijanikiosk-payments/week5/payments
+[Pipeline] {
+[Pipeline] withCredentials
+Masking supported pattern matches of $NEXUS_PASS
+[Pipeline] {
+[Pipeline] sh
++ set -e
++ trap rm -f .npmrc; echo '.npmrc cleaned up.' EXIT
++ echo http://localhost:8081/repository/npm-kijanikiosk/
++ sed -E s|https?://||
++ NEXUS_PROTO_STRIP=localhost:8081/repository/npm-kijanikiosk/
++ printf %s:%s admin ****
++ base64
++ AUTH_TOKEN=YWRtaW46****
++ echo registry=http://localhost:8081/repository/npm-kijanikiosk/
++ echo //localhost:8081/repository/npm-kijanikiosk/:_auth=YWRtaW46****
++ echo //localhost:8081/repository/npm-kijanikiosk/:always-auth=true
++ npm version 1.0.0-27ef42e --no-git-tag-version
+v1.0.0-27ef42e
++ npm publish
+npm notice
+npm notice 📦  payments@1.0.0-27ef42e
+npm notice Tarball Contents
+npm notice 136B .npmrc.backup
+npm notice 170B build.js
+npm notice 144B dist/index.js
+npm notice 4.7kB green-build-log.txt
+npm notice 449B kijanikiosk-payments-1.0.0.tar.gz
+npm notice 362B lab-notes.md
+npm notice 319B package.json
+npm notice 62.9kB payments-1.0.0.tgz
+npm notice 36.2kB pipeline-screenshots/green-stage-view.png
+npm notice 23.7kB pipeline-screenshots/red-stage-view.png
+npm notice 1.6kB publish-log.txt
+npm notice 6.7kB red-build-log.txt
+npm notice 144B src/index.js
+npm notice 211B tests/payments.test.js
+npm notice Tarball Details
+npm notice name: payments
+npm notice version: 1.0.0-27ef42e
+npm notice filename: payments-1.0.0-27ef42e.tgz
+npm notice package size: 126.1 kB
+npm notice unpacked size: 137.7 kB
+npm notice shasum: 41176925524e7166f7cebdca1f9a875a5e9ef897
+npm notice integrity: sha512-VScwt393h+Dzv[...]eFOU9br7u5QPw==
+npm notice total files: 14
+npm notice
+npm notice Publishing to http://localhost:8081/repository/npm-kijanikiosk/ with tag latest and default access
++ payments@1.0.0-27ef42e
++ rm -f .npmrc
++ echo .npmrc cleaned up.
+.npmrc cleaned up.
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] cleanWs
+[WS-CLEANUP] Deleting project workspace...
+[WS-CLEANUP] Deferred wipeout is used...
+[WS-CLEANUP] done
+[Pipeline] echo
+Published kijanikiosk-payments version 1.0.0-27ef42e to Nexus
+[Pipeline] echo
+Artifact URL: http://localhost:8081/repository/npm-kijanikiosk/kijanikiosk-payments/-/kijanikiosk-payments-1.0.0-27ef42e.tgz
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // timeout
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

@@ -21,3 +21,4 @@ Completed activities include:
 * Release tagging and traceability practices
 
 This tag serves as a checkpoint that allows the engineering team to identify the repository state at the completion of the Tuesday training activities.
+

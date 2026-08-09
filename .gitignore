@@ -1,0 +1,12 @@
+# Node.js
+node_modules/
+dist/
+coverage/
+.npmrc
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
