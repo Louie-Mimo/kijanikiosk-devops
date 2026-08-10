@@ -3,133 +3,512 @@ name: KijaniKiosk Blue-Green Deployment
 on:
   workflow_dispatch:
 
+concurrency:
+  group: kijanikiosk-staging
+  cancel-in-progress: false
+
+env:
+  STAGING_HOST: 13.60.227.116
+  STAGING_USER: ubuntu
+  APP_VERSION: v1.4.0
+  ARTIFACT_BASE_URL: http://127.0.0.1:8080
+
 jobs:
+  # ============================================================
+  # 1. Set target environment
+  # ============================================================
   set-environment:
     name: Set deployment environment
     runs-on: self-hosted
 
     outputs:
-      environment: green
+      environment: ${{ steps.target.outputs.environment }}
 
     steps:
       - name: Set target environment
-        run: echo "Deploying to green environment"
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
 
+          echo "environment=green" >> "$GITHUB_OUTPUT"
+          echo "Deploying to green environment"
+
+
+  # ============================================================
+  # 2. Deploy v1.4.0 to GREEN
+  # ============================================================
   deploy-app:
     name: Deploy v1.4.0 to green
-    needs: set-environment
+    needs:
+      - set-environment
     runs-on: self-hosted
+
+    env:
+      TARGET_ENV: ${{ needs.set-environment.outputs.environment }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up SSH key
+        shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" \
+            > ~/.ssh/kijanikiosk_staging
+
           chmod 600 ~/.ssh/kijanikiosk_staging
 
       - name: Deploy application
+        shell: bash
         run: |
-          scp -i ~/.ssh/kijanikiosk_staging \
+          set -euo pipefail
+
+          echo "Deploying $APP_VERSION to $TARGET_ENV..."
+
+          scp \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
             week7/tuesday/scripts/deploy-app.sh \
-            ubuntu@13.60.227.116:/home/ubuntu/deploy-app.sh
+            "$STAGING_USER@$STAGING_HOST:/tmp/deploy-app.sh"
 
-          ssh -i ~/.ssh/kijanikiosk_staging \
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
-            ubuntu@13.60.227.116 \
-            "sudo APP_VERSION=v1.4.0 \
-             DEPLOY_ENV=green \
-             ARTIFACT_BASE_URL=http://127.0.0.1:8080 \
-             bash /home/ubuntu/deploy-app.sh"
+            "$STAGING_USER@$STAGING_HOST" \
+            "
+              sudo install \
+                -o root \
+                -g kijanikiosk \
+                -m 750 \
+                /tmp/deploy-app.sh \
+                /opt/kijanikiosk/scripts/deploy-app.sh
+
+              sudo \
+                APP_VERSION='$APP_VERSION' \
+                DEPLOY_ENV='$TARGET_ENV' \
+                ARTIFACT_BASE_URL='$ARTIFACT_BASE_URL' \
+                bash /opt/kijanikiosk/scripts/deploy-app.sh
+            "
+
+      - name: Verify green deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              echo "Checking green service..."
+
+              systemctl is-active --quiet kk-api-green.service
+
+              response=$(curl \
+                --fail \
+                --silent \
+                --show-error \
+                --max-time 5 \
+                http://127.0.0.1:3001/health)
+
+              echo "Green response: $response"
+
+              echo "$response" |
+                grep -Eq "\"status\"[[:space:]]*:[[:space:]]*\"ok\""
+
+              echo "$response" |
+                grep -Eq "\"version\"[[:space:]]*:[[:space:]]*\"v1\.4\.0\""
+
+              echo "$response" |
+                grep -Eq "\"port\"[[:space:]]*:[[:space:]]*3001"
+
+              echo "Green deployment is healthy."
+            '
 
       - name: Remove SSH key
         if: always()
+        shell: bash
         run: rm -f ~/.ssh/kijanikiosk_staging
 
+
+  # ============================================================
+  # 3. Switch nginx BLUE -> GREEN
+  # ============================================================
   switch-traffic:
     name: Switch nginx traffic to green
     needs:
       - set-environment
       - deploy-app
+
     if: needs.deploy-app.result == 'success'
     runs-on: self-hosted
 
+    env:
+      TARGET_ENV: ${{ needs.set-environment.outputs.environment }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up SSH key
+        shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" \
+            > ~/.ssh/kijanikiosk_staging
+
           chmod 600 ~/.ssh/kijanikiosk_staging
 
-      - name: Copy switch script
+      - name: Install switch and rollback scripts
+        shell: bash
         run: |
-          scp -i ~/.ssh/kijanikiosk_staging \
+          set -euo pipefail
+
+          scp \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
             week7/wednesday/scripts/switch-env.sh \
-            ubuntu@13.60.227.116:/tmp/switch-env.sh
+            week7/wednesday/scripts/rollback.sh \
+            "$STAGING_USER@$STAGING_HOST:/tmp/"
 
-          ssh -i ~/.ssh/kijanikiosk_staging \
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
-            ubuntu@13.60.227.116 \
-            "sudo mkdir -p /opt/kijanikiosk/scripts && \
-             sudo mv /tmp/switch-env.sh /opt/kijanikiosk/scripts/switch-env.sh && \
-             sudo chmod +x /opt/kijanikiosk/scripts/switch-env.sh"
+            "$STAGING_USER@$STAGING_HOST" '
+              sudo mkdir -p /opt/kijanikiosk/scripts
+
+              sudo install \
+                -o root \
+                -g kijanikiosk \
+                -m 750 \
+                /tmp/switch-env.sh \
+                /opt/kijanikiosk/scripts/switch-env.sh
+
+              sudo install \
+                -o root \
+                -g kijanikiosk \
+                -m 750 \
+                /tmp/rollback.sh \
+                /opt/kijanikiosk/scripts/rollback.sh
+
+              rm -f /tmp/switch-env.sh
+              rm -f /tmp/rollback.sh
+            '
+
+      - name: Show state before switch
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              echo "Active environment before switch:"
+              sudo cat /opt/kijanikiosk/.active-env
+
+              echo
+              echo "Proxy response before switch:"
+              curl --fail --silent --show-error \
+                http://127.0.0.1:80/health
+
+              echo
+            '
 
       - name: Switch nginx to green
+        shell: bash
         run: |
-          ssh -i ~/.ssh/kijanikiosk_staging \
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
-            ubuntu@13.60.227.116 \
-            "sudo bash /opt/kijanikiosk/scripts/switch-env.sh green"
+            "$STAGING_USER@$STAGING_HOST" \
+            "sudo bash /opt/kijanikiosk/scripts/switch-env.sh '$TARGET_ENV'"
+
+      - name: Verify traffic switch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              echo "Active environment:"
+              sudo cat /opt/kijanikiosk/.active-env
+
+              echo
+              echo "Previous environment:"
+              sudo cat /opt/kijanikiosk/.previous-env
+
+              echo
+              echo "Proxy response:"
+
+              response=$(curl \
+                --fail \
+                --silent \
+                --show-error \
+                --max-time 5 \
+                http://127.0.0.1:80/health)
+
+              echo "$response"
+
+              echo "$response" |
+                grep -Eq "\"version\"[[:space:]]*:[[:space:]]*\"v1\.4\.0\""
+
+              echo "$response" |
+                grep -Eq "\"port\"[[:space:]]*:[[:space:]]*3001"
+            '
 
       - name: Remove SSH key
         if: always()
+        shell: bash
         run: rm -f ~/.ssh/kijanikiosk_staging
 
-  auto-rollback:
-    name: Auto-rollback on switch failure
+
+  # ============================================================
+  # 4. Monitor GREEN after switch
+  # ============================================================
+  post-switch-health:
+    name: Monitor green after traffic switch
     needs:
       - switch-traffic
-    if: needs.switch-traffic.result == 'failure'
+
+    if: needs.switch-traffic.result == 'success'
     runs-on: self-hosted
 
     steps:
+      - name: Set up SSH key
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" \
+            > ~/.ssh/kijanikiosk_staging
+
+          chmod 600 ~/.ssh/kijanikiosk_staging
+
+      - name: Monitor live traffic
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              set -euo pipefail
+
+              echo "======================================"
+              echo "Starting post-switch confidence window"
+              echo "======================================"
+
+              for i in $(seq 1 6); do
+                echo
+                echo "Health check $i/6..."
+
+                response=$(curl \
+                  --fail \
+                  --silent \
+                  --show-error \
+                  --max-time 5 \
+                  http://127.0.0.1:80/health)
+
+                echo "Live response: $response"
+
+                echo "$response" |
+                  grep -Eq "\"status\"[[:space:]]*:[[:space:]]*\"ok\"" || {
+                    echo "ERROR: Health status is not OK"
+                    exit 1
+                  }
+
+                echo "$response" |
+                  grep -Eq "\"version\"[[:space:]]*:[[:space:]]*\"v1\.4\.0\"" || {
+                    echo "ERROR: Proxy is not serving v1.4.0"
+                    exit 1
+                  }
+
+                echo "$response" |
+                  grep -Eq "\"port\"[[:space:]]*:[[:space:]]*3001" || {
+                    echo "ERROR: Proxy is not routing to green port 3001"
+                    exit 1
+                  }
+
+                echo "Health check $i passed."
+
+                if [ "$i" -lt 6 ]; then
+                  sleep 5
+                fi
+              done
+
+              echo
+              echo "Confidence window passed."
+              echo "Green remained healthy."
+            '
+
+      - name: Remove SSH key
+        if: always()
+        shell: bash
+        run: rm -f ~/.ssh/kijanikiosk_staging
+
+
+  # ============================================================
+  # 5. Automatic rollback
+  # ============================================================
+  auto-rollback:
+    name: Auto-rollback on deployment failure
+    needs:
+      - set-environment
+      - switch-traffic
+      - post-switch-health
+
+    if: >-
+      ${{
+        always() &&
+        (
+          needs.switch-traffic.result == 'failure' ||
+          needs.post-switch-health.result == 'failure'
+        )
+      }}
+
+    runs-on: self-hosted
+
+    env:
+      TARGET_ENV: ${{ needs.set-environment.outputs.environment }}
+
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up SSH key
+        shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/kijanikiosk_staging
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" \
+            > ~/.ssh/kijanikiosk_staging
+
           chmod 600 ~/.ssh/kijanikiosk_staging
 
-      - name: Copy rollback script
+      - name: Ensure rollback script is installed
+        shell: bash
         run: |
-          scp -i ~/.ssh/kijanikiosk_staging \
+          set -euo pipefail
+
+          scp \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
             week7/wednesday/scripts/rollback.sh \
-            ubuntu@13.60.227.116:/tmp/rollback.sh
+            "$STAGING_USER@$STAGING_HOST:/tmp/rollback.sh"
 
-          ssh -i ~/.ssh/kijanikiosk_staging \
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
-            ubuntu@13.60.227.116 \
-            "sudo mkdir -p /opt/kijanikiosk/scripts && \
-             sudo mv /tmp/rollback.sh /opt/kijanikiosk/scripts/rollback.sh && \
-             sudo chmod +x /opt/kijanikiosk/scripts/rollback.sh"
+            "$STAGING_USER@$STAGING_HOST" '
+              sudo mkdir -p /opt/kijanikiosk/scripts
+
+              sudo install \
+                -o root \
+                -g kijanikiosk \
+                -m 750 \
+                /tmp/rollback.sh \
+                /opt/kijanikiosk/scripts/rollback.sh
+
+              rm -f /tmp/rollback.sh
+            '
+
+      - name: Check whether rollback is required
+        id: rollback-check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ACTIVE_ENV=$(
+            ssh \
+              -i ~/.ssh/kijanikiosk_staging \
+              -o StrictHostKeyChecking=no \
+              "$STAGING_USER@$STAGING_HOST" \
+              "sudo cat /opt/kijanikiosk/.active-env"
+          )
+
+          ACTIVE_ENV=$(echo "$ACTIVE_ENV" | tr -d '[:space:]')
+
+          echo "Target environment: $TARGET_ENV"
+          echo "Active environment: $ACTIVE_ENV"
+
+          if [ "$ACTIVE_ENV" = "$TARGET_ENV" ]; then
+            echo "rollback_required=true" >> "$GITHUB_OUTPUT"
+            echo "Traffic reached green. Rollback is required."
+          else
+            echo "rollback_required=false" >> "$GITHUB_OUTPUT"
+            echo "Traffic never completed the switch to green."
+            echo "Rollback is not required."
+          fi
 
       - name: Execute rollback
+        if: steps.rollback-check.outputs.rollback_required == 'true'
+        shell: bash
         run: |
-          ssh -i ~/.ssh/kijanikiosk_staging \
+          set -euo pipefail
+
+          echo "Executing rollback..."
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
-            ubuntu@13.60.227.116 \
+            "$STAGING_USER@$STAGING_HOST" \
             "sudo bash /opt/kijanikiosk/scripts/rollback.sh"
+
+      - name: Verify rollback to blue
+        if: steps.rollback-check.outputs.rollback_required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              echo "Active environment after rollback:"
+              sudo cat /opt/kijanikiosk/.active-env
+
+              echo
+              echo "Proxy response after rollback:"
+
+              response=$(curl \
+                --fail \
+                --silent \
+                --show-error \
+                --max-time 5 \
+                http://127.0.0.1:80/health)
+
+              echo "$response"
+
+              echo "$response" |
+                grep -Eq "\"version\"[[:space:]]*:[[:space:]]*\"v1\.3\.0\""
+
+              echo "$response" |
+                grep -Eq "\"port\"[[:space:]]*:[[:space:]]*3000"
+
+              echo
+              echo "Rollback verification passed."
+            '
 
       - name: Remove SSH key
         if: always()
+        shell: bash
         run: rm -f ~/.ssh/kijanikiosk_staging
