@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  STAGING_HOST: 13.60.227.116
+  STAGING_HOST: 172.31.47.224
   STAGING_USER: ubuntu
   APP_VERSION: v1.4.0
   ARTIFACT_BASE_URL: http://127.0.0.1:8080
