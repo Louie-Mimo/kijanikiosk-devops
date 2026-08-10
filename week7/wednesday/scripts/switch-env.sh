@@ -8,105 +8,154 @@ NGINX_ACTIVE="/etc/nginx/kijanikiosk-active-env.conf"
 
 TARGET_ENV="${1:-}"
 
+MAX_ATTEMPTS=15
+RETRY_DELAY=2
+
+TMP_CONFIG=""
+BACKUP_CONFIG=""
+
 log() {
-    echo "[$(date -u +%H:%M:%S)] [SWITCH] $*"
+    echo "[$(date '+%H:%M:%S')] [SWITCH] $*"
 }
 
 log_fail() {
-    echo "[$(date -u +%H:%M:%S)] [SWITCH FAIL] $*" >&2
+    echo "[$(date '+%H:%M:%S')] [SWITCH FAIL] $*" >&2
 }
 
-# ------------------------------------------------------------
+cleanup() {
+    if [ -n "${TMP_CONFIG}" ] && [ -f "${TMP_CONFIG}" ]; then
+        rm -f "${TMP_CONFIG}"
+    fi
+
+    if [ -n "${BACKUP_CONFIG}" ] && [ -f "${BACKUP_CONFIG}" ]; then
+        rm -f "${BACKUP_CONFIG}"
+    fi
+}
+
+trap cleanup EXIT
+
+
+# ============================================================
 # Validate argument
-# ------------------------------------------------------------
+# ============================================================
 
 if [ "${TARGET_ENV}" != "blue" ] && [ "${TARGET_ENV}" != "green" ]; then
     log_fail "Usage: $0 blue|green"
     exit 1
 fi
 
-# ------------------------------------------------------------
+
+# ============================================================
 # Determine current environment
-# ------------------------------------------------------------
+# ============================================================
 
 if [ ! -f "${ACTIVE_ENV_STATE}" ]; then
-    log_fail "Active environment state file does not exist"
+    log_fail "Active environment state file does not exist: ${ACTIVE_ENV_STATE}"
     exit 1
 fi
 
-CURRENT_ENV=$(cat "${ACTIVE_ENV_STATE}")
+CURRENT_ENV="$(tr -d '[:space:]' < "${ACTIVE_ENV_STATE}")"
 
 if [ "${CURRENT_ENV}" != "blue" ] && [ "${CURRENT_ENV}" != "green" ]; then
     log_fail "Invalid current environment: ${CURRENT_ENV}"
     exit 1
 fi
 
+
+# ============================================================
+# Determine target settings
+# ============================================================
+
+case "${TARGET_ENV}" in
+    blue)
+        TARGET_PORT=3000
+        TARGET_SERVICE="kk-api-blue.service"
+        TARGET_UPSTREAM="kk-api-blue"
+        ;;
+    green)
+        TARGET_PORT=3001
+        TARGET_SERVICE="kk-api-green.service"
+        TARGET_UPSTREAM="kk-api-green"
+        ;;
+esac
+
 log "Current environment: ${CURRENT_ENV}"
 log "Target environment:  ${TARGET_ENV}"
 
-# ------------------------------------------------------------
-# Already on target?
-# ------------------------------------------------------------
+
+# ============================================================
+# Already active?
+# ============================================================
 
 if [ "${CURRENT_ENV}" = "${TARGET_ENV}" ]; then
-    log "Already on ${TARGET_ENV}. Nothing to switch."
+    log "Target environment ${TARGET_ENV} is already active."
+    log "No traffic switch required."
     exit 0
 fi
 
-# ------------------------------------------------------------
-# Determine target port
-# ------------------------------------------------------------
 
-if [ "${TARGET_ENV}" = "blue" ]; then
-    TARGET_PORT=3000
-    TARGET_SERVICE="kk-api-blue.service"
-else
-    TARGET_PORT=3001
-    TARGET_SERVICE="kk-api-green.service"
-fi
+# ============================================================
+# STEP 1 - Verify target
+# ============================================================
 
-# ------------------------------------------------------------
-# Pre-condition: target service must be running
-# ------------------------------------------------------------
-
-log "Checking ${TARGET_SERVICE}..."
+log "Step 1: Verifying ${TARGET_ENV} is healthy on port ${TARGET_PORT}..."
 
 if ! systemctl is-active --quiet "${TARGET_SERVICE}"; then
-    log_fail "${TARGET_SERVICE} is not running"
+    log_fail "Pre-switch health check FAILED: ${TARGET_ENV} (port ${TARGET_PORT}) is not responding"
+    log_fail "Refusing to switch. Run the deployment script first."
     exit 1
 fi
 
-# ------------------------------------------------------------
-# Pre-condition: target health endpoint
-# ------------------------------------------------------------
-
-log "Checking target health on port ${TARGET_PORT}..."
-
-HEALTH_RESPONSE=$(curl -sf --max-time 5 \
-    "http://127.0.0.1:${TARGET_PORT}/health") || {
-        log_fail "Target ${TARGET_ENV} health check failed"
-        exit 1
-    }
+HEALTH_RESPONSE="$(
+    curl \
+        --silent \
+        --show-error \
+        --fail \
+        --max-time 5 \
+        "http://127.0.0.1:${TARGET_PORT}/health"
+)" || {
+    log_fail "Pre-switch health check FAILED: ${TARGET_ENV} (port ${TARGET_PORT}) is not responding"
+    log_fail "Refusing to switch. Run the deployment script first."
+    exit 1
+}
 
 log "Target health: ${HEALTH_RESPONSE}"
 
-# ------------------------------------------------------------
-# Build new nginx configuration
-# ------------------------------------------------------------
+if ! echo "${HEALTH_RESPONSE}" |
+    grep -Eq "\"status\"[[:space:]]*:[[:space:]]*\"ok\""; then
 
-if [ "${TARGET_ENV}" = "blue" ]; then
-    TARGET_UPSTREAM="kk-api-blue"
-else
-    TARGET_UPSTREAM="kk-api-green"
+    log_fail "Target ${TARGET_ENV} returned an unhealthy response"
+    exit 1
 fi
 
-TMP_CONFIG=$(mktemp)
+if ! echo "${HEALTH_RESPONSE}" |
+    grep -Eq "\"port\"[[:space:]]*:[[:space:]]*${TARGET_PORT}([,}])"; then
+
+    log_fail "Target health endpoint is not reporting port ${TARGET_PORT}"
+    exit 1
+fi
+
+log "Pre-switch health check passed: ${TARGET_ENV} is healthy"
+
+
+# ============================================================
+# STEP 2 - Build new nginx config
+# ============================================================
+
+log "Step 2: Writing new nginx active-env configuration..."
+
+TMP_CONFIG="$(mktemp "${NGINX_ACTIVE}.new.XXXXXX")"
+BACKUP_CONFIG="$(mktemp "${NGINX_ACTIVE}.backup.XXXXXX")"
+
+# Preserve the currently working config in case validation,
+# reload, or post-switch verification fails.
+cp -a "${NGINX_ACTIVE}" "${BACKUP_CONFIG}"
 
 cat > "${TMP_CONFIG}" <<EOF
 location / {
-    proxy_pass         http://${TARGET_UPSTREAM};
+    proxy_pass http://${TARGET_UPSTREAM};
     proxy_http_version 1.1;
-    proxy_set_header   Host \$host;
+    proxy_set_header Host \$host;
     proxy_cache_bypass \$http_upgrade;
 }
 
@@ -115,79 +164,139 @@ location /health {
 }
 EOF
 
-# ------------------------------------------------------------
-# Install temporary configuration
-# ------------------------------------------------------------
+# Preserve existing permissions and ownership.
+chown --reference="${NGINX_ACTIVE}" "${TMP_CONFIG}"
+chmod --reference="${NGINX_ACTIVE}" "${TMP_CONFIG}"
 
-cp "${TMP_CONFIG}" "${NGINX_ACTIVE}.new"
-rm -f "${TMP_CONFIG}"
+# Put the candidate config in the active location.
+#
+# nginx has NOT been reloaded yet, so live traffic is still
+# using the old configuration at this point.
+mv -f "${TMP_CONFIG}" "${NGINX_ACTIVE}"
+TMP_CONFIG=""
 
-# ------------------------------------------------------------
-# Validate nginx BEFORE changing active configuration
-# ------------------------------------------------------------
 
-log "Validating nginx configuration..."
+# ============================================================
+# STEP 3 - Validate NEW nginx config
+# ============================================================
+
+log "Step 3: Validating nginx configuration..."
 
 if ! nginx -t; then
     log_fail "nginx configuration validation failed"
-    rm -f "${NGINX_ACTIVE}.new"
+    log_fail "Restoring previous nginx configuration"
+
+    cp -a "${BACKUP_CONFIG}" "${NGINX_ACTIVE}"
+
     exit 2
 fi
 
-# ------------------------------------------------------------
-# Record previous environment
-# ------------------------------------------------------------
+log "nginx configuration validation passed"
 
-echo "${CURRENT_ENV}" > "${ACTIVE_ENV_STATE}.previous"
-mv "${ACTIVE_ENV_STATE}.previous" "${PREVIOUS_ENV_STATE}"
 
-log "Recorded previous environment: ${CURRENT_ENV}"
+# ============================================================
+# STEP 4 - Reload nginx
+# ============================================================
 
-# ------------------------------------------------------------
-# Atomically replace active nginx configuration
-# ------------------------------------------------------------
+log "Step 4: Reloading nginx..."
 
-mv "${NGINX_ACTIVE}.new" "${NGINX_ACTIVE}"
-
-log "Active nginx configuration updated to ${TARGET_ENV}"
-
-# ------------------------------------------------------------
-# Reload nginx
-# ------------------------------------------------------------
-
-log "Reloading nginx..."
-
-if ! nginx -s reload; then
+if ! systemctl reload nginx; then
     log_fail "nginx reload failed"
+    log_fail "Restoring previous nginx configuration"
+
+    cp -a "${BACKUP_CONFIG}" "${NGINX_ACTIVE}"
+
+    nginx -t >/dev/null 2>&1 || true
+    systemctl reload nginx >/dev/null 2>&1 || true
+
     exit 2
 fi
 
-# ------------------------------------------------------------
-# Update active state
-# ------------------------------------------------------------
+log "nginx reloaded. Waiting for traffic to route to ${TARGET_ENV}."
 
-echo "${TARGET_ENV}" > "${ACTIVE_ENV_STATE}"
 
-log "Active environment recorded as ${TARGET_ENV}"
+# ============================================================
+# STEP 5 - Verify proxy with retry window
+# ============================================================
 
-# ------------------------------------------------------------
-# Verify traffic actually switched
-# ------------------------------------------------------------
+log "Step 5: Confirming switch via proxy health check..."
 
-log "Verifying nginx traffic..."
+SWITCH_CONFIRMED=false
+RESPONSE=""
 
-RESPONSE=$(curl -sf --max-time 5 http://127.0.0.1/health) || {
-    log_fail "nginx health check failed after switch"
-    exit 3
-}
+for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
 
-log "nginx response: ${RESPONSE}"
+    log "Post-switch health check ${attempt}/${MAX_ATTEMPTS}..."
 
-if ! echo "${RESPONSE}" | grep -q "\"port\":${TARGET_PORT}"; then
+    RESPONSE="$(
+        curl \
+            --silent \
+            --show-error \
+            --fail \
+            --max-time 5 \
+            http://127.0.0.1:80/health 2>/dev/null
+    )" || RESPONSE=""
+
+    if [ -n "${RESPONSE}" ]; then
+        log "nginx response: ${RESPONSE}"
+    else
+        log "nginx response: <no response>"
+    fi
+
+    if echo "${RESPONSE}" |
+        grep -Eq "\"status\"[[:space:]]*:[[:space:]]*\"ok\"" &&
+       echo "${RESPONSE}" |
+        grep -Eq "\"port\"[[:space:]]*:[[:space:]]*${TARGET_PORT}([,}])"; then
+
+        SWITCH_CONFIRMED=true
+        break
+    fi
+
+    if [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; then
+        sleep "${RETRY_DELAY}"
+    fi
+done
+
+
+# ============================================================
+# Verification failure — restore previous nginx configuration
+# ============================================================
+
+if [ "${SWITCH_CONFIRMED}" != "true" ]; then
     log_fail "Traffic did not switch to ${TARGET_ENV}"
+    log_fail "Restoring nginx traffic to ${CURRENT_ENV}"
+
+    cp -a "${BACKUP_CONFIG}" "${NGINX_ACTIVE}"
+
+    if nginx -t; then
+        systemctl reload nginx || true
+    fi
+
+    log_fail "Switch aborted. Active environment state remains ${CURRENT_ENV}"
+
     exit 3
 fi
 
-log "Traffic successfully switched to ${TARGET_ENV}"
+
+# ============================================================
+# Update state ONLY after successful proxy confirmation
+# ============================================================
+
+PREVIOUS_TMP="${PREVIOUS_ENV_STATE}.tmp.$$"
+ACTIVE_TMP="${ACTIVE_ENV_STATE}.tmp.$$"
+
+printf '%s\n' "${CURRENT_ENV}" > "${PREVIOUS_TMP}"
+printf '%s\n' "${TARGET_ENV}" > "${ACTIVE_TMP}"
+
+chown root:kijanikiosk "${PREVIOUS_TMP}" "${ACTIVE_TMP}"
+chmod 640 "${PREVIOUS_TMP}" "${ACTIVE_TMP}"
+
+mv -f "${PREVIOUS_TMP}" "${PREVIOUS_ENV_STATE}"
+mv -f "${ACTIVE_TMP}" "${ACTIVE_ENV_STATE}"
+
+log "Post-switch confirmation passed: proxy is routing to ${TARGET_ENV} (port ${TARGET_PORT})"
+log "Recorded previous environment: ${CURRENT_ENV}"
+log "Active environment recorded as ${TARGET_ENV}"
+log "=== Switch to ${TARGET_ENV} complete ==="
 
 exit 0
