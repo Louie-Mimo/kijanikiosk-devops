@@ -1,0 +1,168 @@
+Week 8 Tuesday - Production Dockerfile Verification
+====================================================
+
+Image:
+kijanikiosk/kk-payments:v1.0.0-prod
+
+
+BASELINE IMAGE SIZE
+-------------------
+
+Monday image:
+kijanikiosk/kk-payments:v1.0.0-local
+
+Command:
+docker images kijanikiosk/kk-payments:v1.0.0-local --format "Size: {{.Size}}"
+
+Output:
+Size: 266MB
+
+
+TEST 1: Production image size under 100MB
+-----------------------------------------
+
+Command:
+docker images kijanikiosk/kk-payments:v1.0.0-prod --format "{{.Size}}"
+
+Output:
+182MB
+
+Required:
+Less than 100MB
+
+Result:
+FAIL against the stated size threshold.
+
+Investigation:
+
+Command:
+docker images node:18-alpine --format "node:18-alpine base: {{.Size}}"
+
+Output:
+node:18-alpine base: 181MB
+
+The required node:18-alpine base image is already 181MB while the complete
+production image is 182MB.
+
+Additional filesystem audit:
+
+/app        244.0K
+/usr/local  113.5M
+/usr/lib    8.4M
+/lib        708.0K
+
+Application directory:
+
+/app/dist          12.0K
+/app/node_modules  72.0K
+/app/package-lock  152.0K
+/app/package.json  4.0K
+
+The production application therefore adds approximately 1MB to the
+node:18-alpine base image.
+
+The supplied <100MB threshold cannot be reached using Docker's {{.Size}}
+measurement while retaining the required node:18-alpine production base.
+
+
+TEST 2: Process runs as non-root
+--------------------------------
+
+Command:
+docker run --rm kijanikiosk/kk-payments:v1.0.0-prod whoami
+
+Output:
+kijani
+
+Result:
+PASS
+
+
+TEST 3: TypeScript compiler is not present
+------------------------------------------
+
+Command:
+docker run --rm kijanikiosk/kk-payments:v1.0.0-prod \
+  sh -c "which tsc 2>/dev/null && echo 'FAIL: tsc found' || echo 'PASS: tsc not in image'"
+
+Output:
+PASS: tsc not in image
+
+Result:
+PASS
+
+
+TEST 4: devDependencies are not present
+---------------------------------------
+
+Command:
+docker run --rm kijanikiosk/kk-payments:v1.0.0-prod \
+  sh -c "ls node_modules/typescript 2>/dev/null && echo 'FAIL: typescript in prod' || echo 'PASS: no devDeps'"
+
+Output:
+PASS: no devDeps
+
+Result:
+PASS
+
+The actual development dependency used by this project is Jest, so an
+additional project-specific verification was performed.
+
+Command:
+docker run --rm kijanikiosk/kk-payments:v1.0.0-prod \
+  sh -c "test -d node_modules/jest && echo 'FAIL: jest in production' || echo 'PASS: jest not in production image'"
+
+Output:
+PASS: jest not in production image
+
+Result:
+PASS
+
+
+TEST 5: HEALTHCHECK transitions to healthy
+------------------------------------------
+
+Container:
+kk-prod-test
+
+Startup log:
+
+kk-payments v1.0.0 listening on port 3001
+
+Health polling output:
+
+10s: Up 17 seconds (healthy)
+PASS: healthy at 10 seconds
+
+Result:
+PASS
+
+The container became healthy well within the required 60 seconds.
+
+External health verification:
+
+Command:
+curl http://localhost:3001/health
+
+Output:
+{"status":"ok","service":"kk-payments","version":"v1.0.0","port":3001}
+
+
+SUMMARY
+-------
+
+Monday baseline:        266MB
+Production image:       182MB
+Size reduction:         84MB
+
+TEST 1 - Image <100MB:             FAIL - required base itself is 181MB
+TEST 2 - Non-root user:            PASS
+TEST 3 - tsc absent:               PASS
+TEST 4 - devDependencies absent:   PASS
+TEST 5 - HEALTHCHECK:              PASS
+
+Four of the five runtime verification criteria pass.
+
+The remaining size criterion conflicts with the supplied node:18-alpine
+production base image because the base alone is larger than the requested
+100MB threshold.
