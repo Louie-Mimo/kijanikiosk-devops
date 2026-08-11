@@ -275,10 +275,10 @@ jobs:
 
 
   # ============================================================
-  # 4. Monitor GREEN after switch
+  # 4. Post-deployment confidence monitoring
   # ============================================================
-  post-switch-health:
-    name: Monitor green after traffic switch
+  post-deploy-monitor:
+    name: Post-deploy monitor
     needs:
       - switch-traffic
 
@@ -286,6 +286,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up SSH key
         shell: bash
         run: |
@@ -299,7 +302,45 @@ jobs:
 
           chmod 600 ~/.ssh/kijanikiosk_staging
 
-      - name: Monitor live traffic
+      - name: Install post-deploy monitor
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          scp \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            week7/thursday/scripts/post-deploy-monitor.sh \
+            "$STAGING_USER@$STAGING_HOST:/tmp/post-deploy-monitor.sh"
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" '
+              sudo install \
+                -o root \
+                -g kijanikiosk \
+                -m 750 \
+                /tmp/post-deploy-monitor.sh \
+                /opt/kijanikiosk/scripts/post-deploy-monitor.sh
+
+              rm -f /tmp/post-deploy-monitor.sh
+            '
+
+      - name: Run 60-second confidence window
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Starting 60-second post-deployment confidence window..."
+
+          ssh \
+            -i ~/.ssh/kijanikiosk_staging \
+            -o StrictHostKeyChecking=no \
+            "$STAGING_USER@$STAGING_HOST" \
+            "sudo bash /opt/kijanikiosk/scripts/post-deploy-monitor.sh 60"
+
+      - name: Verify final environment
         shell: bash
         run: |
           set -euo pipefail
@@ -308,60 +349,20 @@ jobs:
             -i ~/.ssh/kijanikiosk_staging \
             -o StrictHostKeyChecking=no \
             "$STAGING_USER@$STAGING_HOST" '
-              set -euo pipefail
-
-              echo "======================================"
-              echo "Starting post-switch confidence window"
-              echo "======================================"
-
-              for i in $(seq 1 6); do
-                echo
-                echo "Health check $i/6..."
-
-                response=$(curl \
-                  --fail \
-                  --silent \
-                  --show-error \
-                  --max-time 5 \
-                  http://127.0.0.1:80/health)
-
-                echo "Live response: $response"
-
-                echo "$response" |
-                  grep -Eq "\"status\"[[:space:]]*:[[:space:]]*\"ok\"" || {
-                    echo "ERROR: Health status is not OK"
-                    exit 1
-                  }
-
-                echo "$response" |
-                  grep -Eq "\"version\"[[:space:]]*:[[:space:]]*\"v1\.4\.0\"" || {
-                    echo "ERROR: Proxy is not serving v1.4.0"
-                    exit 1
-                  }
-
-                echo "$response" |
-                  grep -Eq "\"port\"[[:space:]]*:[[:space:]]*3001" || {
-                    echo "ERROR: Proxy is not routing to green port 3001"
-                    exit 1
-                  }
-
-                echo "Health check $i passed."
-
-                if [ "$i" -lt 6 ]; then
-                  sleep 5
-                fi
-              done
+              echo "=== Active Environment ==="
+              sudo cat /opt/kijanikiosk/.active-env
 
               echo
-              echo "Confidence window passed."
-              echo "Green remained healthy."
+              echo "=== Proxy Health ==="
+              curl --fail --silent --show-error \
+                http://127.0.0.1:80/health
+              echo
             '
 
       - name: Remove SSH key
         if: always()
         shell: bash
         run: rm -f ~/.ssh/kijanikiosk_staging
-
 
   # ============================================================
   # 5. Automatic rollback
@@ -371,14 +372,14 @@ jobs:
     needs:
       - set-environment
       - switch-traffic
-      - post-switch-health
+      - post-deploy-monitor
 
     if: >-
       ${{
         always() &&
         (
           needs.switch-traffic.result == 'failure' ||
-          needs.post-switch-health.result == 'failure'
+          needs.post-deploy-monitor.result == 'failure'
         )
       }}
 
