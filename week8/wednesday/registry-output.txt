@@ -1,0 +1,130 @@
+Week 8 Wednesday - Private Registry Verification
+=================================================
+
+Registry:
+ghcr.io
+
+Image:
+ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad
+
+Tagging Strategy:
+Semantic version + short Git commit SHA
+
+Git SHA:
+72d94ad
+
+
+REGISTRY AUTHENTICATION
+-----------------------
+
+Command used:
+
+docker login ghcr.io -u Louie-Mimo --password-stdin
+
+Output:
+
+Login Succeeded
+
+The registry token was supplied through standard input and was not stored
+in the repository or written into the Docker image.
+
+
+IMAGE TAG
+---------
+
+Source image:
+
+kijanikiosk/kk-payments:v1.0.0-prod
+
+Registry image:
+
+ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad
+
+Image ID:
+
+sha256:dc1c351b7dddb0587c2264e53bfa215fcc4f71411f9b167aacdb5ab5903f0c2e
+
+
+REGISTRY PUSH
+-------------
+
+Command:
+
+docker push ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad
+
+Result:
+
+Push successful.
+
+Registry digest:
+
+sha256:dc1c351b7dddb0587c2264e53bfa215fcc4f71411f9b167aacdb5ab5903f0c2e
+
+The pushed image uses the semver-sha tag:
+
+v1.0.0-72d94ad
+
+
+LOCAL IMAGE VERIFICATION
+------------------------
+
+Repository:
+ghcr.io/louie-mimo/kk-payments
+
+Tag:
+v1.0.0-72d94ad
+
+Digest:
+sha256:dc1c351b7dddb0587c2264e53bfa215fcc4f71411f9b167aacdb5ab5903f0c2e
+
+Image ID:
+dc1c351b7ddd
+
+Image size:
+182MB
+
+
+CREDENTIAL CLEANUP
+------------------
+
+The temporary shell variable containing the registry token was removed after
+the push.
+
+Docker logout was also performed.
+
+Output:
+
+Removing login credentials for ghcr.io
+
+
+KUBERNETES IMAGEPULLSECRET
+--------------------------
+
+Status:
+
+PENDING - Kubernetes cluster is not yet configured.
+
+kubectl is installed successfully:
+
+Client Version: v1.36.3
+Kustomize Version: v5.8.1
+
+However, there is currently:
+
+- no Kubernetes context
+- no configured cluster
+- no current context
+- no ~/.kube/config
+
+The ImagePullSecret exercise will therefore be completed when the Kubernetes
+cluster is available.
+
+The required Secret will be named:
+
+kijani-registry-credentials
+
+and will have type:
+
+kubernetes.io/dockerconfigjson
+
+No registry credential values will be committed to Git.

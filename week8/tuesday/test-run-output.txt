@@ -1,0 +1,87 @@
+cat > test-run-output.txt <<'EOF'
+Week 8 Tuesday - Builder Stage Test Evidence
+=============================================
+
+Builder image:
+kijanikiosk/kk-payments:v1.0.0-builder
+
+
+BUILDER IMAGE CREATION
+----------------------
+
+Command:
+
+docker build -f Dockerfile.production --target builder \
+  -t kijanikiosk/kk-payments:v1.0.0-builder .
+
+Result:
+
+Successfully built 8b7270167840
+Successfully tagged kijanikiosk/kk-payments:v1.0.0-builder
+
+
+TEST FRAMEWORK VERIFICATION
+---------------------------
+
+Command:
+
+docker run --rm \
+  kijanikiosk/kk-payments:v1.0.0-builder \
+  npm list jest
+
+Output:
+
+payments@1.0.0 /app
+`-- jest@30.4.2
+
+Result:
+
+PASS - Jest is installed in the builder stage.
+
+
+TEST SUITE EXECUTION
+--------------------
+
+Command:
+
+docker run --rm \
+  kijanikiosk/kk-payments:v1.0.0-builder \
+  npm test
+
+Output:
+
+> payments@1.0.0 test
+> jest
+
+No tests found, exiting with code 1
+Run with `--passWithNoTests` to exit with code 0
+
+In /app
+7 files checked.
+0 test matches found.
+
+Result:
+
+No tests are configured/copied into the Tuesday Docker build context.
+
+The builder-stage dependency check confirms Jest 30.4.2 is installed and
+available. This demonstrates that the builder contains development
+dependencies while the production image does not.
+
+
+BUILDER VS PRODUCTION IMAGE
+---------------------------
+
+kijanikiosk/kk-payments:v1.0.0-builder
+Disk usage: 266MB
+Content size: 62.2MB
+
+kijanikiosk/kk-payments:v1.0.0-prod
+Disk usage: 182MB
+Content size: 45MB
+
+Result:
+
+PASS - the builder image is significantly larger than the production image
+because it contains the development toolchain and devDependencies.
+EOF
