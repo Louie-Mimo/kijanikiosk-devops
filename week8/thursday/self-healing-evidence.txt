@@ -1,0 +1,49 @@
+Week 8 Thursday - Self-Healing Evidence
+========================================
+
+Pods before deletion:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-84b787597f-k8ztx   1/1     Running   0          9m30s
+kk-payments-84b787597f-mb7j4   1/1     Running   0          8h
+
+Pod selected for deletion: kk-payments-84b787597f-k8ztx
+Surviving Pod: kk-payments-84b787597f-mb7j4
+
+Pod transition watch:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-84b787597f-k8ztx   1/1     Running   0          9m43s
+kk-payments-84b787597f-mb7j4   1/1     Running   0          8h
+T0 (Pod deleted): 08:22:17
+pod "kk-payments-84b787597f-k8ztx" deleted from default namespace
+kk-payments-84b787597f-k8ztx   1/1     Terminating   0          9m54s
+kk-payments-84b787597f-2rthv   0/1     Pending       0          0s
+kk-payments-84b787597f-k8ztx   1/1     Terminating   0          9m54s
+kk-payments-84b787597f-2rthv   0/1     Pending       0          0s
+kk-payments-84b787597f-2rthv   0/1     ContainerCreating   0          0s
+kk-payments-84b787597f-2rthv   0/1     Running             0          2s
+kk-payments-84b787597f-2rthv   1/1     Running             0          8s
+
+Replacement Pod: kk-payments-84b787597f-2rthv
+T0 (Pod deleted): 08:22:17
+T1 (replacement Running): 08:22:30
+Recovery to Running: 13 seconds
+Replacement Ready: 08:22:39
+Recovery to Ready: 22 seconds
+
+Pods after self-healing:
+NAME                           READY   STATUS        RESTARTS   AGE
+kk-payments-84b787597f-2rthv   1/1     Running       0          29s
+kk-payments-84b787597f-k8ztx   1/1     Terminating   0          10m
+kk-payments-84b787597f-mb7j4   1/1     Running       0          8h
+
+Deployment after self-healing:
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           8h
+
+Final state after deleted Pod termination:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-84b787597f-2rthv   1/1     Running   0          2m43s
+kk-payments-84b787597f-mb7j4   1/1     Running   0          8h
+
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           8h

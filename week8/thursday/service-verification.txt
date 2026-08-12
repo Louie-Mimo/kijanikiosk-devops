@@ -1,0 +1,26 @@
+Week 8 Thursday - Service Verification
+=======================================
+
+SERVICE
+-------
+NAME                  TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+kk-payments-service   NodePort   10.108.7.16   <none>        3001:30001/TCP   2m20s
+
+ENDPOINTS
+---------
+NAME                  ENDPOINTS                         AGE
+kk-payments-service   10.244.0.4:3001,10.244.0.5:3001   2m20s
+
+NODEPORT
+--------
+Minikube IP: 172.17.0.2
+URL: http://172.17.0.2:30001/health
+
+{"status":"ok","service":"kk-payments","version":"v1.0.0-72d94ad","port":3001}
+
+IN-CLUSTER DNS
+--------------
+Pod: kk-payments-84b787597f-cvc74
+URL: http://kk-payments-service:3001/health
+
+{"status":"ok","service":"kk-payments","version":"v1.0.0-72d94ad","port":3001}

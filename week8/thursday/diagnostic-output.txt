@@ -1,0 +1,134 @@
+Week 8 Thursday - Kubernetes Diagnostic Output
+===============================================
+
+1. WORKLOAD OVERVIEW
+--------------------
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/kk-payments-84b787597f-cvc74   1/1     Running   0          16m
+pod/kk-payments-84b787597f-mb7j4   1/1     Running   0          16m
+
+NAME                          TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+service/kk-payments-service   NodePort   10.108.7.16   <none>        3001:30001/TCP   8m49s
+
+NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/kk-payments   2/2     2            2           16m
+
+NAME                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/kk-payments-84b787597f   2         2         2       16m
+
+2. DEPLOYMENT DESCRIPTION
+-------------------------
+Name:                   kk-payments
+Namespace:              default
+CreationTimestamp:      Tue, 11 Aug 2026 23:45:00 +0300
+Labels:                 app=kk-payments
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=kk-payments
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=kk-payments
+  Containers:
+   kk-payments:
+    Image:      ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad
+    Port:       3001/TCP (http)
+    Host Port:  0/TCP (http)
+    Limits:
+      cpu:     1
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   64Mi
+    Liveness:   http-get http://:3001/health delay=15s timeout=3s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:3001/health delay=5s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      APP_VERSION:  v1.0.0-72d94ad
+    Mounts:         <none>
+  Volumes:          <none>
+  Node-Selectors:   <none>
+  Tolerations:      <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   kk-payments-84b787597f (2/2 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  16m   deployment-controller  Scaled up replica set kk-payments-84b787597f from 0 to 2
+
+3. POD LOGS
+-----------
+
+=== Logs: pod/kk-payments-84b787597f-cvc74 ===
+kk-payments v1.0.0-72d94ad listening on port 3001
+
+=== Logs: pod/kk-payments-84b787597f-mb7j4 ===
+kk-payments v1.0.0-72d94ad listening on port 3001
+
+4. EXEC DIAGNOSTICS
+-------------------
+Selected Pod: pod/kk-payments-84b787597f-cvc74
+
+whoami:
+kijani
+
+Node.js version:
+v18.20.8
+
+Local health check from inside Pod:
+wget: can't connect to remote host: Connection refused
+command terminated with exit code 1
+
+
+5. RESOURCE USAGE
+-----------------
+NAME                           CPU(cores)   MEMORY(bytes)   
+kk-payments-84b787597f-cvc74   1m           12Mi            
+kk-payments-84b787597f-mb7j4   1m           12Mi            
+
+6. RECENT CLUSTER EVENTS
+------------------------
+32m         Normal    RegisteredNode            node/minikube                       Node minikube event: Registered Node minikube in Controller
+33m         Normal    Starting                  node/minikube                       Starting kubelet.
+33m         Normal    NodeHasNoDiskPressure     node/minikube                       Node minikube status is now: NodeHasNoDiskPressure
+32m         Warning   Rebooted                  node/minikube                       Node minikube has been rebooted, boot id: dfcb4627-35d7-480a-b94e-3e2775d3e576
+33m         Normal    NodeAllocatableEnforced   node/minikube                       Updated Node Allocatable limit across pods
+33m         Normal    NodeHasSufficientPID      node/minikube                       Node minikube status is now: NodeHasSufficientPID
+33m         Normal    NodeHasSufficientMemory   node/minikube                       Node minikube status is now: NodeHasSufficientMemory
+16m         Normal    ScalingReplicaSet         deployment/kk-payments              Scaled up replica set kk-payments-84b787597f from 0 to 2
+16m         Normal    SuccessfulCreate          replicaset/kk-payments-84b787597f   Created pod: kk-payments-84b787597f-mb7j4
+16m         Normal    Scheduled                 pod/kk-payments-84b787597f-mb7j4    Successfully assigned default/kk-payments-84b787597f-mb7j4 to minikube
+16m         Normal    SuccessfulCreate          replicaset/kk-payments-84b787597f   Created pod: kk-payments-84b787597f-cvc74
+16m         Normal    Scheduled                 pod/kk-payments-84b787597f-cvc74    Successfully assigned default/kk-payments-84b787597f-cvc74 to minikube
+16m         Normal    Pulling                   pod/kk-payments-84b787597f-cvc74    Pulling image "ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad"
+16m         Normal    Pulling                   pod/kk-payments-84b787597f-mb7j4    Pulling image "ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad"
+16m         Normal    Started                   pod/kk-payments-84b787597f-cvc74    Container started
+16m         Normal    Created                   pod/kk-payments-84b787597f-cvc74    Container created
+16m         Normal    Pulled                    pod/kk-payments-84b787597f-cvc74    Successfully pulled image "ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad" in 18.235s (18.235s including waiting). Image size: 127331098 bytes.
+16m         Normal    Pulled                    pod/kk-payments-84b787597f-mb7j4    Successfully pulled image "ghcr.io/louie-mimo/kk-payments:v1.0.0-72d94ad" in 1.581s (19.816s including waiting). Image size: 127331098 bytes.
+16m         Normal    Created                   pod/kk-payments-84b787597f-mb7j4    Container created
+16m         Normal    Started                   pod/kk-payments-84b787597f-mb7j4    Container started
+
+7. LOCAL HEALTH CHECK FOLLOW-UP
+-------------------------------
+The localhost check returned connection refused.
+The Pod hosts file maps localhost to both 127.0.0.1 and ::1.
+The application listens on IPv4, so the check was repeated using 127.0.0.1.
+
+Pod /etc/hosts:
+# Kubernetes-managed hosts file.
+127.0.0.1	localhost
+::1	localhost ip6-localhost ip6-loopback
+fe00::0	ip6-localnet
+fe00::0	ip6-mcastprefix
+fe00::1	ip6-allnodes
+fe00::2	ip6-allrouters
+10.244.0.5	kk-payments-84b787597f-cvc74
+
+IPv4 loopback health check:
+{"status":"ok","service":"kk-payments","version":"v1.0.0-72d94ad","port":3001}
