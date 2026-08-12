@@ -24,9 +24,9 @@ Obtain the correct values from the team before deploying the application.
 For the local Week 9 lab environment, create the Secret manually with:
 
 kubectl create secret generic kk-payments-secrets \
-  --from-literal=DB_PASSWORD=kijani-dev-password \
-  --from-literal=STRIPE_API_KEY=sk_test_placeholder \
-  --from-literal=JWT_SECRET=kijani-jwt-dev-secret \
+  --from-literal=DB_PASSWORD='<obtain-from-team>' \
+  --from-literal=STRIPE_API_KEY='<obtain-from-team>' \
+  --from-literal=JWT_SECRET='<obtain-from-team>' \
   -n kijani-project
 
 The file `kk-payments-secrets.yaml.example` documents the required Secret
