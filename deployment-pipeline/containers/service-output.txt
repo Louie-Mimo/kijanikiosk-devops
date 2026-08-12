@@ -1,0 +1,37 @@
+KijaniKiosk Kubernetes Service Verification
+===========================================
+
+SERVICE APPLY
+-------------
+service/kk-payments-service created
+
+SERVICE
+-------
+NAME                  TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+kk-payments-service   NodePort   10.108.174.145   <none>        3001:30001/TCP   0s
+
+PODS
+----
+NAME                           READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+kk-payments-5d9485cd68-2876d   1/1     Running   0          2m46s   10.244.0.16   minikube   <none>           <none>
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          5m55s   10.244.0.15   minikube   <none>           <none>
+
+SERVICE ENDPOINTS
+-----------------
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                  ENDPOINTS                           AGE
+kk-payments-service   10.244.0.15:3001,10.244.0.16:3001   20s
+
+NODEPORT ACCESS
+---------------
+Minikube IP: 172.17.0.2
+URL: http://172.17.0.2:30001/health
+
+{"status":"ok","service":"kk-payments","version":"1.0.0-c8df3eb","port":3001}
+
+IN-CLUSTER DNS
+--------------
+Pod: pod/kk-payments-5d9485cd68-2876d
+URL: http://kk-payments-service.default.svc.cluster.local:3001/health
+
+{"status":"ok","service":"kk-payments","version":"1.0.0-c8df3eb","port":3001}
