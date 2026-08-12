@@ -1,0 +1,41 @@
+KijaniKiosk Kubernetes Deployment Verification
+===============================================
+
+Image:
+          image: ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+
+Apply deployment:
+deployment.apps/kk-payments created
+
+Waiting for rollout:
+Waiting for deployment "kk-payments" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "kk-payments" rollout to finish: 1 of 2 updated replicas are available...
+deployment "kk-payments" successfully rolled out
+
+PODS
+----
+NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+kk-payments-5d9485cd68-c6rp6   1/1     Running   0          31s   10.244.0.14   minikube   <none>           <none>
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          31s   10.244.0.15   minikube   <none>           <none>
+
+DEPLOYMENT
+----------
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           32s
+
+IMAGE
+-----
+ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+
+IMAGE PULL SECRET
+-----------------
+kijani-registry-credentials
+
+FINAL DEPLOYMENT STATE
+----------------------
+NAME                           READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+kk-payments-5d9485cd68-c6rp6   1/1     Running   0          2m46s   10.244.0.14   minikube   <none>           <none>
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          2m46s   10.244.0.15   minikube   <none>           <none>
+
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           2m46s

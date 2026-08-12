@@ -1,0 +1,43 @@
+KijaniKiosk Fresh Deployment - Self-Healing Rerun
+==================================================
+
+Pods before deletion:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-5d9485cd68-c6rp6   1/1     Running   0          2m54s
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          2m54s
+
+Pod selected for deletion: kk-payments-5d9485cd68-c6rp6
+Surviving Pod: kk-payments-5d9485cd68-fq2l4
+
+Pod transition watch:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-5d9485cd68-c6rp6   1/1     Running   0          3m1s
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          3m1s
+T0 (Pod deleted): 18:41:47
+pod "kk-payments-5d9485cd68-c6rp6" deleted from default namespace
+kk-payments-5d9485cd68-c6rp6   1/1     Terminating   0          3m9s
+kk-payments-5d9485cd68-2876d   0/1     Pending       0          0s
+kk-payments-5d9485cd68-c6rp6   1/1     Terminating   0          3m9s
+kk-payments-5d9485cd68-2876d   0/1     Pending       0          0s
+kk-payments-5d9485cd68-2876d   0/1     ContainerCreating   0          0s
+kk-payments-5d9485cd68-2876d   0/1     Running             0          3s
+kk-payments-5d9485cd68-2876d   1/1     Running             0          9s
+kk-payments-5d9485cd68-c6rp6   0/1     Error               0          3m40s
+kk-payments-5d9485cd68-c6rp6   0/1     Error               0          3m40s
+kk-payments-5d9485cd68-c6rp6   0/1     Error               0          3m40s
+
+Replacement Pod: kk-payments-5d9485cd68-2876d
+T0 (Pod deleted): 18:41:47
+T1 (replacement Running): 18:42:07
+Recovery to Running: 20 seconds
+Replacement Ready: 18:42:14
+Recovery to Ready: 27 seconds
+
+Pods after self-healing:
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-5d9485cd68-2876d   1/1     Running   0          37s
+kk-payments-5d9485cd68-fq2l4   1/1     Running   0          3m46s
+
+Deployment after self-healing:
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           3m47s
