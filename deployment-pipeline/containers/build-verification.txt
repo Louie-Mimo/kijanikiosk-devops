@@ -1,0 +1,169 @@
+KijaniKiosk Production Image - Build Verification
+==================================================
+
+Date: 2026-08-12T17:40:17+03:00
+
+1. CLEAN BUILD
+--------------
+Command:
+docker build --no-cache -f Dockerfile.production -t kk-payments:production-final .
+
+Build output:
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  163.8kB
+Step 1/17 : FROM node:18-alpine AS builder
+ ---> 8d6421d663b4
+Step 2/17 : WORKDIR /app
+ ---> Running in 00c6272c5bda
+ ---> Removed intermediate container 00c6272c5bda
+ ---> 791ea227d802
+Step 3/17 : COPY package.json package-lock.json ./
+ ---> 8d3be96a707c
+Step 4/17 : RUN npm ci
+ ---> Running in 8989b617320a
+[91mnpm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+[0m[91mnpm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+[0m[91mnpm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+[0m
+added 295 packages, and audited 296 packages in 4s
+
+44 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+[91mnpm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+[0m ---> Removed intermediate container 8989b617320a
+ ---> e273ad4a9375
+Step 5/17 : COPY build.js ./
+ ---> d74a8f9d1bf5
+Step 6/17 : COPY src ./src
+ ---> b89bef5b544f
+Step 7/17 : RUN npm run build
+ ---> Running in b29a6c0506d0
+
+> payments@1.0.0 build
+> node build.js
+
+Build completed.
+ ---> Removed intermediate container b29a6c0506d0
+ ---> f38bcd3b22a7
+Step 8/17 : FROM alpine:3.20 AS production
+ ---> d9e853e87e55
+Step 9/17 : WORKDIR /app
+ ---> Running in c61ca39ff385
+ ---> Removed intermediate container c61ca39ff385
+ ---> 00e8da933499
+Step 10/17 : RUN apk add --no-cache nodejs     && addgroup -S kijani     && adduser -S kijani -G kijani
+ ---> Running in 627a3f1cc0ab
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.20/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.20/community/x86_64/APKINDEX.tar.gz
+(1/11) Installing ca-certificates (20260413-r0)
+(2/11) Installing libgcc (13.2.1_git20240309-r1)
+(3/11) Installing libstdc++ (13.2.1_git20240309-r1)
+(4/11) Installing ada-libs (2.7.8-r0)
+(5/11) Installing libbase64 (0.5.2-r0)
+(6/11) Installing brotli-libs (1.1.0-r2)
+(7/11) Installing c-ares (1.33.1-r0)
+(8/11) Installing icu-data-en (74.2-r1)
+Executing icu-data-en-74.2-r1.post-install
+[91m*
+* If you need ICU with non-English locales and legacy charset support, install
+* package icu-data-full.
+*
+[0m(9/11) Installing icu-libs (74.2-r1)
+(10/11) Installing nghttp2-libs (1.62.1-r0)
+(11/11) Installing nodejs (20.15.1-r0)
+Executing busybox-1.36.1-r31.trigger
+Executing ca-certificates-20260413-r0.trigger
+OK: 61 MiB in 25 packages
+ ---> Removed intermediate container 627a3f1cc0ab
+ ---> 9df6d73aa7b7
+Step 11/17 : COPY --from=builder --chown=kijani:kijani /app/dist ./dist
+ ---> 74311ed2c04c
+Step 12/17 : ENV NODE_ENV=production
+ ---> Running in 6919dcc7b30c
+ ---> Removed intermediate container 6919dcc7b30c
+ ---> f2d544a95040
+Step 13/17 : ENV PORT=3001
+ ---> Running in b569206a1995
+ ---> Removed intermediate container b569206a1995
+ ---> 668f90f57622
+Step 14/17 : USER kijani
+ ---> Running in bfc320a6d31b
+ ---> Removed intermediate container bfc320a6d31b
+ ---> 2908e5d149aa
+Step 15/17 : EXPOSE 3001
+ ---> Running in e015ce1604c2
+ ---> Removed intermediate container e015ce1604c2
+ ---> 3339788cb096
+Step 16/17 : HEALTHCHECK --interval=10s             --timeout=3s             --start-period=30s             --retries=3     CMD wget -q -O /dev/null http://127.0.0.1:3001/health || exit 1
+ ---> Running in a9c915b954ef
+ ---> Removed intermediate container a9c915b954ef
+ ---> 237bd9f14f57
+Step 17/17 : CMD ["node", "dist/index.js"]
+ ---> Running in e8245e27138b
+ ---> Removed intermediate container e8245e27138b
+ ---> 429dca1a8aae
+Successfully built 429dca1a8aae
+Successfully tagged kk-payments:production-final
+
+2. IMAGE SIZE
+-------------
+IMAGE                          ID             DISK USAGE   CONTENT SIZE   EXTRA
+kk-payments:production-final   429dca1a8aae       90.1MB         24.6MB        
+
+Docker images disk usage: 90.1MB
+Requirement: under 100MB
+Result: PASS
+
+Image content size: 24606627 bytes
+Image content size: 24.61 MB
+
+3. NON-ROOT USER
+----------------
+Command: docker run --rm kk-payments:production-final whoami
+Output: kijani
+Result: PASS
+
+4. TYPESCRIPT COMPILER
+----------------------
+Command: docker run --rm kk-payments:production-final which tsc
+Output: <empty>
+Exit code: 1
+Result: PASS - tsc is not installed
+
+5. PRODUCTION TOOLING
+---------------------
+npm: absent
+jest: absent
+
+6. HEALTHCHECK
+--------------
+Container status:
+running / healthy
+
+Healthcheck configuration:
+{"Test":["CMD-SHELL","wget -q -O /dev/null http://127.0.0.1:3001/health || exit 1"],"Interval":10000000000,"Timeout":3000000000,"StartPeriod":30000000000,"Retries":3}
+
+Application health response:
+{"status":"ok","service":"kk-payments","version":"v1.0.0","port":3001}
+
+7. FINAL RESULT
+---------------
+Multi-stage production build: PASS
+Image under 100MB: PASS
+Runs as non-root kijani user: PASS
+TypeScript compiler absent: PASS
+HEALTHCHECK healthy within 60 seconds: PASS
