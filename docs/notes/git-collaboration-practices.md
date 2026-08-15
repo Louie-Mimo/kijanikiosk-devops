@@ -6,7 +6,7 @@ The working directory contains files currently being modified by the developer. 
 
 ## Branching Rules
 
-Feature development should occur in dedicated feature branches created from the develop branch. Direct commits to the main branch are discouraged to protect production stability. Branch names should clearly describe the work being performed.
+Feature development should occur in dedicated feature branches created from the develop branch. Direct commits to the master branch are discouraged to protect production stability. Branch names should clearly describe the work being performed.
 
 ## Pull Request Expectations
 
