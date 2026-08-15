@@ -10,3 +10,11 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Terraform local state and working files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
