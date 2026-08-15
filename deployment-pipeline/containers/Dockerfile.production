@@ -1,0 +1,45 @@
+# ------------------------------------------------------------
+# Stage 1: Build
+# ------------------------------------------------------------
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY build.js ./
+COPY src ./src
+
+RUN npm run build
+
+
+# ------------------------------------------------------------
+# Stage 2: Production runtime
+# ------------------------------------------------------------
+FROM alpine:3.20 AS production
+
+WORKDIR /app
+
+# Install only the Node.js runtime.
+# npm, Jest, TypeScript and build tooling are not required.
+RUN apk add --no-cache nodejs \
+    && addgroup -S kijani \
+    && adduser -S kijani -G kijani
+
+COPY --from=builder --chown=kijani:kijani /app/dist ./dist
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+USER kijani
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=10s \
+            --timeout=3s \
+            --start-period=30s \
+            --retries=3 \
+    CMD wget -q -O /dev/null http://127.0.0.1:3001/health || exit 1
+
+CMD ["node", "dist/index.js"]

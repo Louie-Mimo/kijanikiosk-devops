@@ -1,0 +1,17 @@
+### 1. External Routing
+
+The current Ingress configuration is suitable for demonstrating Kubernetes routing, but it is not sufficient for a production payment platform. The most serious issue is that traffic to `kk-payments` currently uses plain HTTP. Payment credentials and other sensitive request data could therefore be exposed if traffic were intercepted before reaching the cluster. Production should terminate HTTPS at the Ingress using a Kubernetes TLS `Secret` referenced through `spec.tls` in the Ingress. A certificate-management solution such as cert-manager could automate certificate issuance and renewal. The NGINX Ingress Controller can also enforce HTTPS redirection using `nginx.ingress.kubernetes.io/ssl-redirect: "true"` or `force-ssl-redirect`.
+
+TLS is not the only missing control. A payment endpoint should also have rate limiting to reduce abuse and protect backend capacity. With ingress-nginx this can be implemented using annotations such as `nginx.ingress.kubernetes.io/limit-rps`. Authentication and authorization should also be enforced before sensitive payment operations are accepted rather than relying only on network reachability.
+
+### 2. Health Signalling
+
+The current readiness and liveness probes provide basic health signalling, but their production values should be based on measured application startup and dependency behaviour. For `kk-payments`, the readiness probe should allow enough startup time for initialization and database connectivity before declaring the Pod unavailable. The liveness probe should be more conservative than readiness because a temporary database slowdown should not unnecessarily restart an otherwise healthy payment process.
+
+A `failureThreshold` that is too low is particularly risky during temporary database load. Short-lived latency could cause Kubernetes to repeatedly restart Pods, reducing available capacity precisely when transaction demand is already high. Readiness should remove an unhealthy instance from traffic quickly, while liveness should identify genuine deadlock or unrecoverable application failure rather than transient downstream slowness.
+
+### 3. Capacity
+
+Three manually configured replicas are not an adequate long-term response to end-of-month transaction spikes. Production should use a HorizontalPodAutoscaler with reliable resource metrics. Kubernetes HPA periodically evaluates metrics and adjusts replica counts; CPU utilization targets depend on container resource requests, and resource metrics require the metrics API, commonly provided by Metrics Server.
+
+The existing CPU requests therefore provide an important baseline, but HPA minimum and maximum replicas and a realistic CPU target must still be defined. If the target CPU percentage is too high, scaling occurs too late, causing latency, saturation, or transaction failures. If it is too low, the Deployment scales unnecessarily, increasing infrastructure cost and potentially creating excessive replica churn. Production thresholds should therefore be selected from load-test and real traffic measurements rather than arbitrary percentages.
