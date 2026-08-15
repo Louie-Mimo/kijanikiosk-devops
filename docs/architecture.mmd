@@ -58,6 +58,10 @@ flowchart TB
         end
     end
 
+    CLIENT["Demo Client / curl"]
+
+    CLIENT -->|HTTP payment / test request| SSVC
+
     STAGE -->|kubectl apply| SDEP
     SMOKE -->|HTTP GET /health| SSVC
     PRODDEPLOY -->|kubectl apply| PDEP
