@@ -183,12 +183,12 @@ pipeline {
         /*
          * ============================================================
          * CAPSTONE CD
-         * Deployment stages run only for main.
+         * Deployment stages run only for master.
          * ============================================================
          */
         stage('Validate Infrastructure') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -210,7 +210,7 @@ pipeline {
 
         stage('Prepare Ansible Runtime') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -236,7 +236,7 @@ pipeline {
 
         stage('Configure Staging') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -256,7 +256,7 @@ pipeline {
 
         stage('Verify Staging Prerequisites') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -293,7 +293,7 @@ pipeline {
 
         stage('Deploy Staging') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -319,7 +319,7 @@ pipeline {
 
         stage('Staging Smoke Test') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -392,7 +392,7 @@ pipeline {
         stage('Production Approval') {
             when {
                 beforeInput true
-                branch 'main'
+                branch 'master'
             }
 
             options {
@@ -413,7 +413,7 @@ pipeline {
 
         stage('Verify Production Prerequisites') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
@@ -448,7 +448,7 @@ pipeline {
 
         stage('Deploy Production') {
             when {
-                branch 'main'
+                branch 'master'
             }
 
             agent any
