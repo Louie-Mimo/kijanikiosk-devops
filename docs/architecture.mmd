@@ -1,0 +1,92 @@
+flowchart TB
+
+    GH["GitHub Repository"]
+    J["Jenkins Pipeline"]
+
+    GH -->|merge to main| J
+
+    subgraph DELIVERY["Delivery Layer"]
+        direction LR
+        CI["Build + Test"]
+        STAGE["Deploy Staging"]
+        SMOKE["Smoke Test<br/>/health"]
+        APPROVAL{"Production<br/>Approval Gate"}
+        PRODDEPLOY["Deploy Production"]
+
+        CI --> STAGE
+        STAGE --> SMOKE
+        SMOKE -->|HTTP 200| APPROVAL
+        APPROVAL -->|Human approval| PRODDEPLOY
+    end
+
+    J --> CI
+
+    subgraph INFRA["Infrastructure + Configuration"]
+        direction LR
+        TF["Terraform<br/>creates kijani-staging"]
+        AN["Ansible<br/>configures staging"]
+        SHARED["Shared kk-payments<br/>Deployment Manifest"]
+
+        TF --> AN
+    end
+
+    TF -->|Kubernetes API| STAGE
+    AN -->|staging ConfigMap| STAGE
+    SHARED -->|same manifest| STAGE
+    SHARED -->|same manifest| PRODDEPLOY
+
+    subgraph K8S["Minikube Kubernetes Cluster"]
+
+        subgraph STAGING["kijani-staging"]
+            SCFG["kk-payments-config<br/>DB_HOST=kk-postgres-staging"]
+            SDEP["kk-payments<br/>Deployment"]
+            SSVC["kk-payments<br/>Service :3001"]
+
+            SCFG -->|envFrom| SDEP
+            SDEP --> SSVC
+        end
+
+        subgraph PRODUCTION["kijani-project"]
+            PCFG["kk-payments-config<br/>DB_HOST=kk-postgres"]
+            PDEP["kk-payments<br/>Deployment"]
+            PSVC["kk-payments<br/>Service :3001"]
+            ING["NGINX Ingress<br/>kijani.local/payments"]
+
+            PCFG -->|envFrom| PDEP
+            PDEP --> PSVC
+            PSVC --> ING
+        end
+    end
+
+    STAGE -->|kubectl apply| SDEP
+    SMOKE -->|HTTP GET /health| SSVC
+    PRODDEPLOY -->|kubectl apply| PDEP
+
+    subgraph RECEIPTS["Receipt Chain"]
+        BUCKET["kk-payments-receipts-staging"]
+        RECEIPT["Receipt Function"]
+        PROCESS["Processor Function"]
+        NOTIFY["Notifier Function"]
+
+        BUCKET -->|S3 event| RECEIPT
+        RECEIPT --> PROCESS
+        PROCESS --> NOTIFY
+    end
+
+    SDEP -->|receipt JSON| BUCKET
+
+    subgraph MONITORING["Monitoring + AI Governance"]
+        LOGS["Structured kk-payments Logs"]
+        MON["Error Rate Monitor"]
+        SLO["5% Error Rate SLO"]
+        AI["AI-assisted Analysis"]
+        GOV["AI Governance Log"]
+
+        LOGS --> MON
+        MON --> SLO
+        SLO --> AI
+        AI --> GOV
+    end
+
+    SDEP -->|structured logs| LOGS
+    PDEP -->|structured logs| LOGS
