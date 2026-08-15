@@ -2,11 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kk-payments
-  namespace: kijani-project
   labels:
     app: kk-payments
-  annotations:
-    kubernetes.io/change-cause: "Initial production-approaching deployment: v1.1.0"
 
 spec:
   replicas: 3
