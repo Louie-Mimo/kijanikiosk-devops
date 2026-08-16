@@ -24,3 +24,7 @@ crash.*.log
 
 # Generated monitoring evidence
 monitoring/output/
+
+# Python generated cache
+__pycache__/
+*.pyc
