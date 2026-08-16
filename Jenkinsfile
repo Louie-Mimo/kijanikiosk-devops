@@ -13,7 +13,7 @@ pipeline {
         NEXUS_URL          = 'http://172.17.0.1:8081'
         NEXUS_REPO         = 'npm-kijanikiosk'
         APP_NAME           = 'kijanikiosk-payments'
-        WORK_DIR           = 'week5/payments'
+        WORK_DIR           = 'deployment-pipeline/containers'
         npm_config_cache   = '/tmp/.npm'
 
         STAGING_NAMESPACE  = 'kijani-staging'
