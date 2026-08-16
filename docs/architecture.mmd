@@ -1,96 +1,112 @@
-flowchart TB
+flowchart LR
 
-    GH["GitHub Repository"]
-    J["Jenkins Pipeline"]
+    DEV["Developer"]
+    GH["GitHub<br/>Feature Branches + master"]
+    GHCR["GHCR<br/>kk-payments:v1.2.0"]
 
-    GH -->|merge to master| J
+    DEV -->|Commit / PR| GH
+    GH --> JENKINS
 
-    subgraph DELIVERY["Delivery Layer"]
+    subgraph CICD["Jenkins CI/CD"]
+        direction TB
+
+        JENKINS["CI<br/>Lint • Build • Verify"]
+        SEC["Tests + Security Audit"]
+        INFRA["Validate Infrastructure"]
+        AR["Prepare Ansible Runtime"]
+        CONFIG["Configure Staging"]
+        PRESTG["Verify Staging Prerequisites"]
+        DSTG["Deploy Staging"]
+        SMOKE["Smoke Test"]
+        MON["Error Rate Check<br/>&gt;5% = ALERT"]
+        APPROVE["Production Approval<br/>Manual Gate"]
+        PREPROD["Verify Production Prerequisites"]
+        DPROD["Deploy Production"]
+
+        JENKINS --> SEC
+        SEC --> INFRA
+        INFRA --> AR
+        AR --> CONFIG
+        CONFIG --> PRESTG
+        PRESTG --> DSTG
+        DSTG --> SMOKE
+        SMOKE --> MON
+        MON --> APPROVE
+        APPROVE --> PREPROD
+        PREPROD --> DPROD
+    end
+
+    subgraph IAC["Infrastructure & Configuration"]
+        direction TB
+
+        TF["Terraform<br/>kijani-staging namespace"]
+        ANS["Ansible<br/>Staging ConfigMap"]
+        AWSTF["Terraform<br/>AWS receipt resources"]
+    end
+
+    INFRA -.-> TF
+    CONFIG -.-> ANS
+
+    subgraph STAGING["Kubernetes — kijani-staging"]
+        direction TB
+
+        STGCFG["ConfigMap<br/>staging environment"]
+        STGSEC["Kubernetes Secrets"]
+        STGPAY["kk-payments<br/>3 replicas<br/>Node.js 20<br/>v1.2.0"]
+        STGSVC["Service / Ingress"]
+
+        STGCFG --> STGPAY
+        STGSEC --> STGPAY
+        STGPAY --> STGSVC
+    end
+
+    DSTG --> STGPAY
+    GHCR -->|Pull image| STGPAY
+    ANS --> STGCFG
+
+    subgraph RECEIPTS["AWS — Staging Receipt Chain"]
         direction LR
-        CI["Build + Test"]
-        STAGE["Deploy Staging"]
-        SMOKE["Smoke Test<br/>/health"]
-        APPROVAL{"Production<br/>Approval Gate"}
-        PRODDEPLOY["Deploy Production"]
 
-        CI --> STAGE
-        STAGE --> SMOKE
-        SMOKE -->|HTTP 200| APPROVAL
-        APPROVAL -->|Human approval| PRODDEPLOY
+        S3IN["S3<br/>incoming/"]
+        PROC["Receipt Processor<br/>Lambda"]
+        S3PROC["S3<br/>processed/<br/>PROCESSED"]
+        NOTIFY["Notifier<br/>Lambda"]
+        S3NOTIFY["S3<br/>notifications/<br/>SENT"]
+        CW["CloudWatch"]
+
+        S3IN -->|ObjectCreated| PROC
+        PROC --> S3PROC
+        PROC -->|Async invoke| NOTIFY
+        NOTIFY --> S3NOTIFY
+
+        PROC -.-> CW
+        NOTIFY -.-> CW
     end
 
-    J --> CI
+    AWSTF -.-> RECEIPTS
+    STGPAY -->|Successful payment<br/>Publish receipt| S3IN
 
-    subgraph INFRA["Infrastructure + Configuration"]
-        direction LR
-        TF["Terraform<br/>creates kijani-staging"]
-        AN["Ansible<br/>configures staging"]
-        SHARED["Shared kk-payments<br/>Deployment Manifest"]
+    subgraph PROD["Kubernetes — kijani-project"]
+        direction TB
 
-        TF --> AN
+        PRODCFG["ConfigMap<br/>production environment<br/>RECEIPTS_BUCKET unset"]
+        PRODSEC["Kubernetes Secrets"]
+        PRODPAY["kk-payments<br/>3 replicas<br/>Node.js 20<br/>v1.2.0"]
+        PRODSVC["Service / Ingress"]
+        DISABLED["Receipt publishing<br/>DISABLED"]
+
+        PRODCFG --> PRODPAY
+        PRODSEC --> PRODPAY
+        PRODPAY --> PRODSVC
+        PRODPAY -.-> DISABLED
     end
 
-    TF -->|Kubernetes API| STAGE
-    AN -->|staging ConfigMap| STAGE
-    SHARED -->|same manifest| STAGE
-    SHARED -->|same manifest| PRODDEPLOY
+    DPROD --> PRODPAY
+    GHCR -->|Same image| PRODPAY
 
-    subgraph K8S["Minikube Kubernetes Cluster"]
+    SAME["Same Kubernetes Deployment manifest<br/>Staging + Production"]
+    SAME -.-> STGPAY
+    SAME -.-> PRODPAY
 
-        subgraph STAGING["kijani-staging"]
-            SCFG["kk-payments-config<br/>DB_HOST=kk-postgres-staging"]
-            SDEP["kk-payments<br/>Deployment"]
-            SSVC["kk-payments<br/>Service :3001"]
-
-            SCFG -->|envFrom| SDEP
-            SDEP --> SSVC
-        end
-
-        subgraph PRODUCTION["kijani-project"]
-            PCFG["kk-payments-config<br/>DB_HOST=kk-postgres"]
-            PDEP["kk-payments<br/>Deployment"]
-            PSVC["kk-payments<br/>Service :3001"]
-            ING["NGINX Ingress<br/>kijani.local/payments"]
-
-            PCFG -->|envFrom| PDEP
-            PDEP --> PSVC
-            PSVC --> ING
-        end
-    end
-
-    CLIENT["Demo Client / curl"]
-
-    CLIENT -->|HTTP payment / test request| SSVC
-
-    STAGE -->|kubectl apply| SDEP
-    SMOKE -->|HTTP GET /health| SSVC
-    PRODDEPLOY -->|kubectl apply| PDEP
-
-    subgraph RECEIPTS["Receipt Chain"]
-        BUCKET["kk-payments-receipts-staging"]
-        RECEIPT["Receipt Function"]
-        PROCESS["Processor Function"]
-        NOTIFY["Notifier Function"]
-
-        BUCKET -->|S3 event| RECEIPT
-        RECEIPT --> PROCESS
-        PROCESS --> NOTIFY
-    end
-
-    SDEP -->|receipt JSON| BUCKET
-
-    subgraph MONITORING["Monitoring + AI Governance"]
-        LOGS["Structured kk-payments Logs"]
-        MON["Error Rate Monitor"]
-        SLO["5% Error Rate SLO"]
-        AI["AI-assisted Analysis"]
-        GOV["AI Governance Log"]
-
-        LOGS --> MON
-        MON --> SLO
-        SLO --> AI
-        AI --> GOV
-    end
-
-    SDEP -->|structured logs| LOGS
-    PDEP -->|structured logs| LOGS
+    SMOKE -.->|GET /health| STGSVC
+    MON -.->|20 probes| STGSVC
