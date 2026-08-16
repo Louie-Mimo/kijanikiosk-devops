@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: kk-payments
-          image: ghcr.io/louie-mimo/kk-payments:v1.1.0
+          image: ghcr.io/louie-mimo/kk-payments:v1.2.0
           imagePullPolicy: IfNotPresent
 
           ports:
@@ -40,6 +40,9 @@ spec:
                 name: kk-payments-config
             - secretRef:
                 name: kk-payments-secrets
+            - secretRef:
+                name: kk-payments-receipt-aws
+                optional: true
 
           readinessProbe:
             httpGet:
