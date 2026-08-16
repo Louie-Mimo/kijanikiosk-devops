@@ -47,7 +47,7 @@ pipeline {
         stage('CI') {
             agent {
                 docker {
-                    image 'node:18.19.0-alpine'
+                    image 'node:20-alpine'
                     args '--network=host'
                 }
             }

@@ -51,5 +51,6 @@
           - staging_configmap.resources[0].data.NODE_ENV == "staging"
           - staging_configmap.resources[0].data.DB_HOST == "kk-postgres-staging"
           - staging_configmap.resources[0].data.RECEIPTS_BUCKET == "kk-payments-receipts-staging"
+          - staging_configmap.resources[0].data.AWS_REGION == "eu-north-1"
         fail_msg: "Staging kk-payments ConfigMap validation failed."
         success_msg: "Staging kk-payments ConfigMap is correctly configured."

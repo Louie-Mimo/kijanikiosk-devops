@@ -10,3 +10,4 @@ payments_config:
   APP_PORT: "3001"
   MAX_CONNECTIONS: "20"
   RECEIPTS_BUCKET: "kk-payments-receipts-staging"
+  AWS_REGION: "eu-north-1"
