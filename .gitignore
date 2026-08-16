@@ -28,3 +28,13 @@ monitoring/output/
 # Python generated cache
 __pycache__/
 *.pyc
+
+# Serverless Terraform build artifacts
+serverless/terraform/.build/
+
+# Serverless Terraform generated files
+serverless/terraform/.terraform/
+serverless/terraform/.build/
+serverless/terraform/*.tfplan
+serverless/terraform/*.tfstate
+serverless/terraform/*.tfstate.*
