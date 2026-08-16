@@ -120,7 +120,7 @@ pipeline {
                             steps {
                                 dir("${env.WORK_DIR}") {
                                     echo 'Scanning dependencies for high-severity vulnerabilities...'
-                                    sh 'npm audit --audit-level=high || true'
+                                    sh 'npm audit --audit-level=high'
                                 }
                             }
                         }
