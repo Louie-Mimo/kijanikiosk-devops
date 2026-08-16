@@ -1,0 +1,55 @@
+---
+- name: Configure KijaniKiosk staging environment
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Verify Terraform-managed staging namespace exists
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: "{{ staging_namespace }}"
+      register: staging_namespace_info
+
+    - name: Fail when Terraform-managed staging namespace is missing
+      ansible.builtin.assert:
+        that:
+          - staging_namespace_info.resources | length == 1
+        fail_msg: >-
+          Namespace {{ staging_namespace }} does not exist.
+          Run Terraform before running this Ansible playbook.
+        success_msg: >-
+          Terraform-managed namespace {{ staging_namespace }} exists.
+
+    - name: Configure kk-payments staging ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "{{ payments_configmap_name }}"
+            namespace: "{{ staging_namespace }}"
+            labels:
+              app: kk-payments
+              environment: staging
+              managed-by: ansible
+          data: "{{ payments_config }}"
+
+    - name: Read configured staging ConfigMap
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        namespace: "{{ staging_namespace }}"
+        name: "{{ payments_configmap_name }}"
+      register: staging_configmap
+
+    - name: Verify staging configuration
+      ansible.builtin.assert:
+        that:
+          - staging_configmap.resources | length == 1
+          - staging_configmap.resources[0].data.NODE_ENV == "staging"
+          - staging_configmap.resources[0].data.DB_HOST == "kk-postgres-staging"
+          - staging_configmap.resources[0].data.RECEIPTS_BUCKET == "kk-payments-receipts-staging"
+        fail_msg: "Staging kk-payments ConfigMap validation failed."
+        success_msg: "Staging kk-payments ConfigMap is correctly configured."

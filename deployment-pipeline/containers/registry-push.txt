@@ -1,0 +1,117 @@
+KijaniKiosk Private Registry Verification
+==========================================
+
+VERSION STRING COMPUTATION
+--------------------------
+VERSION=$(node -p "require('./package.json').version")
+GITSHA=$(git rev-parse --short=7 HEAD)
+IMAGE_TAG="${VERSION}-${GITSHA}"
+
+VERSION=1.0.0
+GITSHA=c8df3eb
+IMAGE_TAG=1.0.0-c8df3eb
+REGISTRY_IMAGE=ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+
+REGISTRY PUSH
+-------------
+The push refers to repository [ghcr.io/louie-mimo/kk-payments]
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+e86cffde46cb: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+e86cffde46cb: Waiting
+e86cffde46cb: Layer already exists
+25f1d6b1951a: Waiting
+b0e99aaef41f: Waiting
+f576222336f3: Waiting
+25f1d6b1951a: Layer already exists
+b0e99aaef41f: Layer already exists
+f576222336f3: Layer already exists
+1.0.0-c8df3eb: digest: sha256:429dca1a8aae40f8fb17adb811db576ecdfd1f172aa0cf1e51411855735e59d2 size: 1183
+
+LOCAL IMAGE REMOVAL
+-------------------
+Untagged: ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+
+LOCAL IMAGE REMOVAL
+-------------------
+Error response from daemon: No such image: ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+Local registry image absent after deletion: PASS
+
+FRESH REGISTRY PULL
+-------------------
+1.0.0-c8df3eb: Pulling from louie-mimo/kk-payments
+Digest: sha256:429dca1a8aae40f8fb17adb811db576ecdfd1f172aa0cf1e51411855735e59d2
+Status: Downloaded newer image for ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb
+
+PULLED IMAGE
+------------
+IMAGE                                          ID             DISK USAGE   CONTENT SIZE   EXTRA
+ghcr.io/louie-mimo/kk-payments:1.0.0-c8df3eb   429dca1a8aae         90MB         24.6MB        
+
+Repo digest:
+ghcr.io/louie-mimo/kk-payments@sha256:429dca1a8aae40f8fb17adb811db576ecdfd1f172aa0cf1e51411855735e59d2
+
+Runtime user:
+kijani
+
+FINAL RESULT
+------------
+Version generated from package.json: 1.0.0
+Git SHA generated from committed HEAD: c8df3eb
+Versioned tag: 1.0.0-c8df3eb
+Private registry push: PASS
+Local image deletion: PASS
+Fresh registry pull: PASS

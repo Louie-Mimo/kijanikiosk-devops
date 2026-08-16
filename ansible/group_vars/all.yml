@@ -1,0 +1,12 @@
+staging_namespace: "kijani-staging"
+
+payments_configmap_name: "kk-payments-config"
+
+payments_config:
+  NODE_ENV: "staging"
+  DB_HOST: "kk-postgres-staging"
+  DB_PORT: "5432"
+  LOG_LEVEL: "info"
+  APP_PORT: "3001"
+  MAX_CONNECTIONS: "20"
+  RECEIPTS_BUCKET: "kk-payments-receipts-staging"
