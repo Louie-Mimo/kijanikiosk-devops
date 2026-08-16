@@ -21,3 +21,6 @@ crash.*.log
 
 # Capstone Ansible Python environment
 .venv-ansible/
+
+# Generated monitoring evidence
+monitoring/output/

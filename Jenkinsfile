@@ -389,6 +389,44 @@ pipeline {
         /*
          * This stage is unreachable when the staging smoke test fails.
          */
+        stage('Staging Error Rate Check') {
+            when {
+                branch 'master'
+            }
+
+            agent any
+
+            steps {
+                echo 'Evaluating staging HTTP error rate against the 5% threshold...'
+
+                sh '''
+                    set -eu
+
+                    python3 -m py_compile monitoring/error-rate-monitor.py
+
+                    bash -n monitoring/check-staging-error-rate.sh
+                    bash -n monitoring/test-error-rate-monitor.sh
+
+                    echo "Running controlled threshold validation..."
+                    ./monitoring/test-error-rate-monitor.sh
+
+                    echo
+                    echo "Running live staging error-rate check..."
+
+                    REQUEST_COUNT=20 \
+                    THRESHOLD=5 \
+                    OUTPUT_DIR="$WORKSPACE/monitoring/output" \
+                    ./monitoring/check-staging-error-rate.sh
+                '''
+
+                archiveArtifacts(
+                    artifacts: 'monitoring/output/*',
+                    fingerprint: true,
+                    allowEmptyArchive: false
+                )
+            }
+        }
+
         stage('Production Approval') {
             when {
                 beforeInput true
